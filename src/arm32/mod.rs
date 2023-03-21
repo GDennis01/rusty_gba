@@ -1,3 +1,4 @@
+//TODO: decode deve restituire una Instruction
 pub mod isa;
 use bit::BitIndex;
 use isa::Opcode::{self, *};

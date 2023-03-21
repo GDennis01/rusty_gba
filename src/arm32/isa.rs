@@ -43,12 +43,60 @@ pub enum Opcode {
     UNDEF,
     DBG,
 }
+#[derive(Debug)]
+
 pub struct Instruction {
     opc: Opcode,
     data: u32,
     cond: Condition,
 }
-pub enum Condition {}
+impl fmt::Display for Instruction {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}{:?}", self.opc, self.cond)
+    }
+}
+#[derive(Debug)]
+
+pub enum Condition {
+    EQ,
+    NE,
+    CS,
+    CC,
+    MI,
+    PL,
+    VS,
+    VC,
+    HI,
+    LS,
+    GE,
+    LT,
+    GT,
+    LE,
+    AL,
+    ERR,
+}
+impl fmt::Display for Condition {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Condition::EQ => write!(f, "EQ"),
+            Condition::NE => write!(f, "NE"),
+            Condition::CS => write!(f, "CS"),
+            Condition::CC => write!(f, "CC"),
+            Condition::MI => write!(f, "MI"),
+            Condition::PL => write!(f, "PL"),
+            Condition::VS => write!(f, "VS"),
+            Condition::VC => write!(f, "VC"),
+            Condition::HI => write!(f, "HI"),
+            Condition::LS => write!(f, "LS"),
+            Condition::GE => write!(f, "GE"),
+            Condition::LT => write!(f, "LT"),
+            Condition::GT => write!(f, "GT"),
+            Condition::LE => write!(f, "LE"),
+            Condition::AL => write!(f, "AL"),
+            Condition::ERR => write!(f, "ERR"),
+        }
+    }
+}
 impl fmt::Display for Opcode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
