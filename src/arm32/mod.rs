@@ -106,20 +106,27 @@ impl Arm32 {
         if instruction.bit_range(24..28) == 0b1111 {
             return SWI;
         }
+        if instruction.bit_range(25..28) == 0b011 && instruction.bit(4) {
+            return UNDEF;
+        }
         return match instruction.bit_range(25..28) {
-            0b011 => UNDEF,
             0b101 => B,
             0b100 => self.decode_block_data_transfer(instruction),
-            0b010 => self.decode_single_data_transfer(instruction),
+            p @ 0b011 | p @ 0b010 => {
+                // if p == 0b011 && instruction.bit(4) {
+                //     UNDEF
+                // } else {
+                self.decode_single_data_transfer(instruction)
+                // }
+            }
             p @ 0b000 | p @ 0b001 => {
-                if (instruction.bit(4) && !instruction.bit(7)) || !instruction.bit(4) {
+                if (p == 0b000
+                    && ((instruction.bit(4) && !instruction.bit(7)) || !instruction.bit(4)))
+                    || p == 0b001
+                {
                     return self.decode_data_processing_psr_transfer(instruction);
                 }
-                // 0b001 is only defined for data processing psr transfer
-                if p == 0b001 {
-                    return UNDEF;
-                }
-                if instruction.bit_range(4..8) == 1001 {
+                if instruction.bit_range(4..8) == 0b1001 {
                     return match instruction.bit_range(23..25) {
                         0 => self.decode_mul(instruction),
                         0b01 => self.decode_mul_long(instruction),

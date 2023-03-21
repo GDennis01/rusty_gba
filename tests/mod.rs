@@ -4,8 +4,8 @@ use rusty_gba::arm32::*;
 #[test]
 fn test_and() {
     let cpu = Arm32::new();
-    match cpu.decode(0x120123) {
-        isa::Opcode::AND => assert!(true),
+    match cpu.decode(0xE001_0090) {
+        isa::Opcode::MUL => assert!(true),
         _ => assert!(false),
     }
 

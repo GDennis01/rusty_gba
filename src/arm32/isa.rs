@@ -41,6 +41,7 @@ pub enum Opcode {
     UMLAL,
     UMULL,
     UNDEF,
+    DBG,
 }
 pub struct Instruction {
     opc: Opcode,
@@ -91,6 +92,7 @@ impl fmt::Display for Opcode {
             Opcode::SMLAL => write!(f, "SMLAL"),
             Opcode::SWP => write!(f, "SWP"),
             Opcode::SWPB => write!(f, "SWPB"),
+            Opcode::DBG => write!(f, "DBG"),
         }
     }
 }
