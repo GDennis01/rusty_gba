@@ -45,6 +45,25 @@ impl Arm32 {
             false => STR,
         }
     }
+    fn decode_psr(&self, instruction: u32, opc: Opcode) -> Opcode {
+        match opc {
+            MRS => {
+                if instruction.bit_range(16..22) == 0b001111 && instruction.bit_range(0..12) == 0 {
+                    MRS
+                } else {
+                    UNDEF
+                }
+            }
+            MSR => {
+                if instruction.bit_range(12..22) == 0b1010011111 {
+                    MSR
+                } else {
+                    UNDEF
+                }
+            }
+            _ => UNDEF,
+        }
+    }
     fn decode_data_processing_psr_transfer(&self, instruction: u32) -> Opcode {
         match instruction.bit_range(21..25) {
             0b0000 => AND,
@@ -55,10 +74,34 @@ impl Arm32 {
             0b0101 => ADC,
             0b0110 => SBC,
             0b0111 => RSC,
-            0b1000 => return if !instruction.bit(20) { MRS } else { TST },
-            0b1001 => return if !instruction.bit(20) { MSR } else { TEQ },
-            0b1010 => return if !instruction.bit(20) { MRS } else { CMP },
-            0b1011 => return if !instruction.bit(20) { MSR } else { CMN },
+            0b1000 => {
+                return if !instruction.bit(20) {
+                    self.decode_psr(instruction, MRS)
+                } else {
+                    TST
+                }
+            }
+            0b1001 => {
+                return if !instruction.bit(20) {
+                    self.decode_psr(instruction, MSR)
+                } else {
+                    TEQ
+                }
+            }
+            0b1010 => {
+                return if !instruction.bit(20) {
+                    self.decode_psr(instruction, MRS)
+                } else {
+                    CMP
+                }
+            }
+            0b1011 => {
+                return if !instruction.bit(20) {
+                    self.decode_psr(instruction, MSR)
+                } else {
+                    CMN
+                }
+            }
             0b1100 => ORR,
             0b1101 => MOV,
             0b1110 => BIC,
@@ -202,7 +245,10 @@ impl Arm32 {
                             cond,
                         },
                     };
-                } else if instruction.bit(4) && instruction.bit(7) {
+                } else if instruction.bit(4)
+                    && instruction.bit(7)
+                    && instruction.bit_range(8..12) == 0
+                {
                     return Instruction {
                         opc: self.decode_hdt(instruction),
                         data: instruction,
