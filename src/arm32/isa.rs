@@ -46,13 +46,16 @@ pub enum Opcode {
 #[derive(Debug)]
 
 pub struct Instruction {
-    opc: Opcode,
-    data: u32,
-    cond: Condition,
+    pub opc: Opcode,
+    pub data: u32,
+    pub cond: Condition,
 }
 impl fmt::Display for Instruction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}{:?}", self.opc, self.cond)
+        match self.cond {
+            Condition::AL => write!(f, "{:?} {:x?}", self.opc, self.data),
+            _ => write!(f, "{:?}{:?} {:x?}", self.opc, self.cond, self.data),
+        }
     }
 }
 #[derive(Debug)]

@@ -1,8 +1,11 @@
-//TODO: decode deve restituire una Instruction
+//TODO: Implementare ciclo fetch decode execute
 pub mod isa;
 use bit::BitIndex;
+use isa::Condition::{self, *};
+use isa::Instruction;
 use isa::Opcode::{self, *};
 use std::ops::Range;
+
 // const OPC_1: u8 = 0xF0; //bits[4..=7]
 const OPC_1: Range<usize> = 4..8; //bits[4..=7]                        // const OPC_2: u8 = 0xFF00000; //bits[20..=27]
 const OPC_2: Range<usize> = 20..28; //bits[20..=27]
@@ -99,25 +102,70 @@ impl Arm32 {
             },
         }
     }
-
-    pub fn decode(&self, instruction: u32) -> Opcode {
+    fn get_condition(&self, instruction: u32) -> Condition {
+        return match instruction.bit_range(28..32) {
+            0b0000 => EQ,
+            0b0001 => NE,
+            0b0010 => CS,
+            0b0011 => CC,
+            0b0100 => MI,
+            0b0101 => PL,
+            0b0110 => VS,
+            0b0111 => VC,
+            0b1000 => HI,
+            0b1001 => LS,
+            0b1010 => GE,
+            0b1011 => LT,
+            0b1100 => GT,
+            0b1101 => LE,
+            0b1110 => AL,
+            0b1111 => ERR,
+            _ => ERR,
+        };
+    }
+    pub fn decode(&self, instruction: u32) -> Instruction {
+        let cond: Condition = self.get_condition(instruction);
         if instruction.bit_range(4..28) == 0x12FFF1 {
-            return BX;
+            return Instruction {
+                opc: BX,
+                data: instruction,
+                cond,
+            };
         }
         if instruction.bit_range(24..28) == 0b1111 {
-            return SWI;
+            return Instruction {
+                opc: SWI,
+                data: instruction,
+                cond,
+            };
         }
         if instruction.bit_range(25..28) == 0b011 && instruction.bit(4) {
-            return UNDEF;
+            return Instruction {
+                opc: UNDEF,
+                data: instruction,
+                cond,
+            };
         }
         return match instruction.bit_range(25..28) {
-            0b101 => B,
-            0b100 => self.decode_block_data_transfer(instruction),
+            0b101 => Instruction {
+                opc: B,
+                data: instruction,
+                cond,
+            },
+            0b100 => Instruction {
+                opc: self.decode_block_data_transfer(instruction),
+                data: instruction,
+                cond,
+            },
             p @ 0b011 | p @ 0b010 => {
                 // if p == 0b011 && instruction.bit(4) {
                 //     UNDEF
                 // } else {
-                self.decode_single_data_transfer(instruction)
+                Instruction {
+                    opc: self.decode_single_data_transfer(instruction),
+                    data: instruction,
+                    cond,
+                }
                 // }
             }
             p @ 0b000 | p @ 0b001 => {
@@ -125,21 +173,53 @@ impl Arm32 {
                     && ((instruction.bit(4) && !instruction.bit(7)) || !instruction.bit(4)))
                     || p == 0b001
                 {
-                    return self.decode_data_processing_psr_transfer(instruction);
+                    return Instruction {
+                        opc: self.decode_data_processing_psr_transfer(instruction),
+                        data: instruction,
+                        cond,
+                    };
                 }
                 if instruction.bit_range(4..8) == 0b1001 {
                     return match instruction.bit_range(23..25) {
-                        0 => self.decode_mul(instruction),
-                        0b01 => self.decode_mul_long(instruction),
-                        0b10 => SWP,
-                        _ => UNDEF,
+                        0 => Instruction {
+                            opc: self.decode_mul(instruction),
+                            data: instruction,
+                            cond,
+                        },
+                        0b01 => Instruction {
+                            opc: self.decode_mul_long(instruction),
+                            data: instruction,
+                            cond,
+                        },
+                        0b10 => Instruction {
+                            opc: SWP,
+                            data: instruction,
+                            cond,
+                        },
+                        _ => Instruction {
+                            opc: UNDEF,
+                            data: instruction,
+                            cond,
+                        },
                     };
                 } else if instruction.bit(4) && instruction.bit(7) {
-                    return self.decode_hdt(instruction);
+                    return Instruction {
+                        opc: self.decode_hdt(instruction),
+                        data: instruction,
+                        cond,
+                    };
                 }
-                return UNDEF;
+                return Instruction {
+                    opc: UNDEF,
+                    data: instruction,
+                    cond,
+                };
             }
-            _ => UNDEF,
+            _ => Instruction {
+                opc: UNDEF,
+                data: instruction,
+                cond,
+            },
         };
     }
     // fn is_dp_psr(&self, instruction: u32) -> bool {
