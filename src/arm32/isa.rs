@@ -43,7 +43,7 @@ pub enum Opcode {
     UNDEF,
     DBG,
 }
-type FxArm32 = fn(&Arm32, u32) -> u8;
+// type FxArm32 = fn(&Arm32, u32) -> u8;
 #[derive(Debug)]
 
 pub struct Instruction {

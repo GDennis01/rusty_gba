@@ -5,7 +5,8 @@ use bit::BitIndex;
 use isa::Condition::{self, *};
 use isa::Instruction;
 use isa::Opcode::{self, *};
-use std::ops::Range;
+use std::ops::RangeBounds;
+use std::ops::{Range, RangeInclusive};
 
 // const OPC_1: u8 = 0xF0; //bits[4..=7]
 const OPC_1: Range<usize> = 4..8; //bits[4..=7]                        // const OPC_2: u8 = 0xFF00000; //bits[20..=27]
@@ -23,6 +24,31 @@ pub struct Arm32 {
     pipeline: [u32; 3],
     _registers: Registers,
 }
+/// Returns the number in the given range
+/// 111011.bit_range(2..4) would return 101
+// pub trait BitRange {
+//     fn bit_range<R: RangeBounds<u8>>(&self, range: R) -> Self;
+//     fn bit(&self, bit: u8) -> bool;
+// }
+
+// impl BitRange for u32 {
+//     fn bit_range<R: RangeBounds<u8>>(&self, range: R) -> Self {
+//         let start = match range.start_bound() {
+//             std::ops::Bound::Included(&n) => n,
+//             std::ops::Bound::Excluded(&n) => n - 1,
+//             std::ops::Bound::Unbounded => 0,
+//         };
+//         let end: u8 = match range.end_bound() {
+//             std::ops::Bound::Included(&n) => n,
+//             std::ops::Bound::Excluded(&n) => n - 1,
+//             std::ops::Bound::Unbounded => 0,
+//         };
+//         (self << (31 - end)) >> (start + (31 - end)) //still gotta test
+//     }
+//     fn bit(&self, bit: u8) -> bool {
+//         (self << bit) == 1
+//     }
+// }
 impl Arm32 {
     pub fn new() -> Arm32 {
         Arm32 {
@@ -117,27 +143,29 @@ impl Arm32 {
         }
     }
     fn decode_mul_long(&self, instruction: u32) -> Opcode {
+        let bit21 = instruction.bit(21);
         match instruction.bit(22) {
-            true => match instruction.bit(21) {
+            true => match bit21 {
                 true => SMLAL,
                 false => SMULL,
             },
-            false => match instruction.bit(21) {
+            false => match bit21 {
                 true => UMLAL,
                 false => UMULL,
             },
         }
     }
     fn decode_hdt(&self, instruction: u32) -> Opcode {
+        let r = instruction.bit_range(5..7);
         match instruction.bit(20) {
-            true => match instruction.bit_range(5..7) {
+            true => match r {
                 0b00 => UNDEF,
                 0b01 => LDRH,
                 0b10 => LDRSB,
                 0b11 => LDRSH,
                 _ => UNDEF,
             },
-            false => match instruction.bit_range(5..7) {
+            false => match r {
                 0b00 => UNDEF,
                 0b01 => STRH,
                 0b10 => UNDEF,
@@ -183,14 +211,19 @@ impl Arm32 {
                 cond,
             };
         }
-        if instruction.bit_range(25..28) == 0b011 && instruction.bit(4) {
-            return Instruction {
+        // if instruction.bit_range(25..28) == 0b011 && instruction.bit(4) {
+        //     return Instruction {
+        //         opc: UNDEF,
+        //         data: instruction,
+        //         cond,
+        //     };
+        // }
+        return match instruction.bit_range(25..28) {
+            0b011 if instruction.bit(4) => Instruction {
                 opc: UNDEF,
                 data: instruction,
                 cond,
-            };
-        }
-        return match instruction.bit_range(25..28) {
+            },
             0b101 => Instruction {
                 opc: B,
                 data: instruction,
@@ -201,17 +234,11 @@ impl Arm32 {
                 data: instruction,
                 cond,
             },
-            p @ 0b011 | p @ 0b010 => {
-                // if p == 0b011 && instruction.bit(4) {
-                //     UNDEF
-                // } else {
-                Instruction {
-                    opc: self.decode_single_data_transfer(instruction),
-                    data: instruction,
-                    cond,
-                }
-                // }
-            }
+            0b011 | 0b010 => Instruction {
+                opc: self.decode_single_data_transfer(instruction),
+                data: instruction,
+                cond,
+            },
             p @ 0b000 | p @ 0b001 => {
                 if (p == 0b000
                     && ((instruction.bit(4) && !instruction.bit(7)) || !instruction.bit(4)))
@@ -269,5 +296,4 @@ impl Arm32 {
             },
         };
     }
-  }
 }
