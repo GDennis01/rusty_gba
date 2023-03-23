@@ -43,12 +43,14 @@ pub enum Opcode {
     UNDEF,
     DBG,
 }
+type FxArm32 = fn(&Arm32, u32) -> u8;
 #[derive(Debug)]
 
 pub struct Instruction {
     pub opc: Opcode,
     pub data: u32,
     pub cond: Condition,
+    // pub fx: FxArm32,
 }
 impl fmt::Display for Instruction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
