@@ -1,7 +1,7 @@
 //TODO: Implementare ciclo fetch decode execute
 //FIXME: 0000 0000 0000 0000 0010 0110 1001 0011 (0x2693) MUL
 pub mod isa;
-use bit::BitIndex;
+// use bit::BitIndex;
 use isa::Condition::{self, *};
 use isa::Instruction;
 use isa::Opcode::{self, *};
@@ -26,29 +26,29 @@ pub struct Arm32 {
 }
 /// Returns the number in the given range
 /// 111011.bit_range(2..4) would return 101
-// pub trait BitRange {
-//     fn bit_range<R: RangeBounds<u8>>(&self, range: R) -> Self;
-//     fn bit(&self, bit: u8) -> bool;
-// }
+pub trait BitRange {
+    fn bit_range<R: RangeBounds<u8>>(&self, range: R) -> Self;
+    fn bit(&self, bit: u8) -> bool;
+}
 
-// impl BitRange for u32 {
-//     fn bit_range<R: RangeBounds<u8>>(&self, range: R) -> Self {
-//         let start = match range.start_bound() {
-//             std::ops::Bound::Included(&n) => n,
-//             std::ops::Bound::Excluded(&n) => n - 1,
-//             std::ops::Bound::Unbounded => 0,
-//         };
-//         let end: u8 = match range.end_bound() {
-//             std::ops::Bound::Included(&n) => n,
-//             std::ops::Bound::Excluded(&n) => n - 1,
-//             std::ops::Bound::Unbounded => 0,
-//         };
-//         (self << (31 - end)) >> (start + (31 - end)) //still gotta test
-//     }
-//     fn bit(&self, bit: u8) -> bool {
-//         (self << bit) == 1
-//     }
-// }
+impl BitRange for u32 {
+    fn bit_range<R: RangeBounds<u8>>(&self, range: R) -> Self {
+        let start = match range.start_bound() {
+            std::ops::Bound::Included(&n) => n,
+            std::ops::Bound::Excluded(&n) => n - 1,
+            std::ops::Bound::Unbounded => 0,
+        };
+        let end: u8 = match range.end_bound() {
+            std::ops::Bound::Included(&n) => n,
+            std::ops::Bound::Excluded(&n) => n - 1,
+            std::ops::Bound::Unbounded => 0,
+        };
+        (self << (31 - end)) >> (31 - (end - start)) //still gotta test
+    }
+    fn bit(&self, bit: u8) -> bool {
+        (self << (31 - bit)) >> (31 - (bit - bit)) == 1
+    }
+}
 impl Arm32 {
     pub fn new() -> Arm32 {
         Arm32 {
