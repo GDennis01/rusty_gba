@@ -43,10 +43,10 @@ impl BitRange for u32 {
             std::ops::Bound::Excluded(&n) => n - 1,
             std::ops::Bound::Unbounded => 0,
         };
-        (self << (31 - end)) >> (31 - (end - start)) //still gotta test
+        (self << (31 - end)) >> (31 - (end - start))
     }
     fn bit(&self, bit: u8) -> bool {
-        (self << (31 - bit)) >> (31 - (bit - bit)) == 1
+        self.bit_range(bit..=bit) == 1
     }
 }
 impl Arm32 {
@@ -75,14 +75,14 @@ impl Arm32 {
     fn decode_psr(&self, instruction: u32, opc: Opcode) -> Opcode {
         match opc {
             MRS => {
-                if instruction.bit_range(16..22) == 0b001111 && instruction.bit_range(0..12) == 0 {
+                if instruction.bit_range(16..=21) == 0b001111 && instruction.bit_range(0..12) == 0 {
                     MRS
                 } else {
                     UNDEF
                 }
             }
             MSR => {
-                if instruction.bit_range(12..22) == 0b1010011111 {
+                if instruction.bit_range(12..=21) == 0b1010011111 {
                     MSR
                 } else {
                     UNDEF
@@ -92,7 +92,7 @@ impl Arm32 {
         }
     }
     fn decode_data_processing_psr_transfer(&self, instruction: u32) -> Opcode {
-        match instruction.bit_range(21..25) {
+        match instruction.bit_range(21..=24) {
             0b0000 => AND,
             0b0001 => EOR,
             0b0010 => SUB,
@@ -156,7 +156,7 @@ impl Arm32 {
         }
     }
     fn decode_hdt(&self, instruction: u32) -> Opcode {
-        let r = instruction.bit_range(5..7);
+        let r = instruction.bit_range(5..=6);
         match instruction.bit(20) {
             true => match r {
                 0b00 => UNDEF,
@@ -175,7 +175,7 @@ impl Arm32 {
         }
     }
     fn get_condition(&self, instruction: u32) -> Condition {
-        return match instruction.bit_range(28..32) {
+        return match instruction.bit_range(28..=31) {
             0b0000 => EQ,
             0b0001 => NE,
             0b0010 => CS,
@@ -197,14 +197,14 @@ impl Arm32 {
     }
     pub fn decode(&self, instruction: u32) -> Instruction {
         let cond: Condition = self.get_condition(instruction);
-        if instruction.bit_range(4..28) == 0x12FFF1 {
+        if instruction.bit_range(4..=27) == 0x12FFF1 {
             return Instruction {
                 opc: BX,
                 data: instruction,
                 cond,
             };
         }
-        if instruction.bit_range(24..28) == 0b1111 {
+        if instruction.bit_range(24..=27) == 0b1111 {
             return Instruction {
                 opc: SWI,
                 data: instruction,
@@ -275,7 +275,7 @@ impl Arm32 {
                     };
                 } else if instruction.bit(4)
                     && instruction.bit(7)
-                    && instruction.bit_range(8..12) == 0
+                    && instruction.bit_range(8..=11) == 0
                 {
                     return Instruction {
                         opc: self.decode_hdt(instruction),
