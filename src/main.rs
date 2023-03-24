@@ -1,10 +1,11 @@
 pub mod arm32;
+use rusty_gba::BitRange;
+use rusty_gba::CPU;
 use std::{
     fs,
     io::{ErrorKind, Write},
 };
-
-use arm32::Arm32;
+//import lib
 pub fn main() {
     println!("Hello, worlds!");
     let _bios = fs::read("gba_bios.bin").unwrap_or_else(|error| {
@@ -14,6 +15,7 @@ pub fn main() {
             panic!("IDK");
         }
     });
+
     //create a file to write in append using fs
     let mut file = fs::OpenOptions::new()
         .write(true)
@@ -26,7 +28,8 @@ pub fn main() {
     for (i, chunk) in _bios.chunks(4).enumerate() {
         bios[i] = u32::from_le_bytes(chunk.try_into().unwrap());
     }
-    let cpu: Arm32 = arm32::Arm32::new();
+    //create a new cpu
+    let cpu = CPU::new();
     for ins in &bios {
         let _ins = cpu.decode(*ins);
         if let Err(e) = writeln!(file, "{_ins}") {
