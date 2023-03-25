@@ -1,5 +1,3 @@
-pub mod arm32;
-
 pub use rusty_gba::CPU;
 use std::{
     fs,
