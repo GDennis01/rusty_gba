@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::arm32::isa::OpcodeArm;
+use crate::{arm32::isa::OpcodeArm, thumb::isa::OpcodeThumb};
 
 pub struct Instruction {
     pub opc: Opcode,
@@ -19,7 +19,7 @@ impl fmt::Display for Instruction {
 
 pub enum Opcode {
     Arm32(OpcodeArm),
-    Thumb(OpcodeArm),
+    Thumb(OpcodeThumb),
 }
 
 impl fmt::Debug for Opcode {
