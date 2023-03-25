@@ -1,9 +1,10 @@
 //TODO: Implementare ciclo fetch decode execute
 pub mod isa;
-use crate::cpu::Condition;
-use crate::cpu::Condition::*;
-use crate::cpu::Instruction;
-use crate::cpu::Opcode::*;
+use crate::cpu::{
+    Condition::{self, *},
+    Instruction,
+    Opcode::*,
+};
 use crate::BitRange;
 use isa::OpcodeArm::{self, *};
 pub struct Arm32 {}
