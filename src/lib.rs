@@ -1,10 +1,10 @@
-pub mod arm32;
-pub use arm32::*;
-pub use isa::*;
-pub mod thumb;
+pub mod cpu;
+pub use cpu::Instruction;
 use std::ops::RangeBounds;
-pub use thumb::*;
-//TODO: capire come funzionano i moduli
+pub mod arm32;
+pub mod thumb;
+use arm32::Arm32;
+
 pub trait BitRange {
     fn bit_range<R: RangeBounds<u8>>(&self, range: R) -> Self;
     fn bit(&self, bit: u8) -> bool;
@@ -27,11 +27,16 @@ impl BitRange for u32 {
         self.bit_range(bit..=bit) == 1
     }
 }
+pub enum Mode {
+    ARM,
+    THUMB,
+}
 pub struct CPU {
     registers: [u32; 16],
     cpsr: u32,
     spsr: u32,
     pipeline: [u32; 3],
+    mode: Mode,
 }
 impl CPU {
     pub fn new() -> Self {
@@ -40,9 +45,13 @@ impl CPU {
             cpsr: 0,
             spsr: 0,
             pipeline: [0; 3],
+            mode: Mode::ARM,
         }
     }
     pub fn decode(&self, instruction: u32) -> Instruction {
-        Arm32::decode(instruction)
+        match &self.mode {
+            ARM => Arm32::decode(instruction),
+            THUMB => Arm32::decode(instruction), //REPLACE WITH THUMB
+        }
     }
 }

@@ -1,9 +1,8 @@
-use rusty_gba::arm32::*;
-use rusty_gba::isa::*;
+use rusty_gba::*;
 #[cfg(test)]
 #[test]
 fn test_and() {
-    let cpu = Arm32::new();
+    let cpu = CPU::new();
     match cpu.decode(0xe59fd1a0) {
         Instruction {
             opc: MRS,

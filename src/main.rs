@@ -1,6 +1,6 @@
 pub mod arm32;
-use rusty_gba::BitRange;
-use rusty_gba::CPU;
+
+pub use rusty_gba::CPU;
 use std::{
     fs,
     io::{ErrorKind, Write},
