@@ -3,24 +3,25 @@ pub mod isa;
 use crate::cpu::Condition;
 use crate::cpu::Condition::*;
 use crate::cpu::Instruction;
+use crate::cpu::Opcode::*;
 use crate::BitRange;
-use isa::Opcode::{self, *};
+use isa::OpcodeArm::{self, *};
 pub struct Arm32 {}
 
 impl Arm32 {
-    fn decode_block_data_transfer(instruction: u32) -> Opcode {
+    fn decode_block_data_transfer(instruction: u32) -> OpcodeArm {
         match instruction.bit(20) {
             true => LDM,
             false => STM,
         }
     }
-    fn decode_single_data_transfer(instruction: u32) -> Opcode {
+    fn decode_single_data_transfer(instruction: u32) -> OpcodeArm {
         match instruction.bit(20) {
             true => LDR,
             false => STR,
         }
     }
-    fn decode_psr(instruction: u32, opc: Opcode) -> Opcode {
+    fn decode_psr(instruction: u32, opc: OpcodeArm) -> OpcodeArm {
         match opc {
             MRS => {
                 if instruction.bit_range(16..=21) == 0b001111 && instruction.bit_range(0..12) == 0 {
@@ -39,7 +40,7 @@ impl Arm32 {
             _ => UNDEF,
         }
     }
-    fn decode_data_processing_psr_transfer(instruction: u32) -> Opcode {
+    fn decode_data_processing_psr_transfer(instruction: u32) -> OpcodeArm {
         match instruction.bit_range(21..=24) {
             0b0000 => AND,
             0b0001 => EOR,
@@ -84,13 +85,13 @@ impl Arm32 {
             _ => UNDEF,
         }
     }
-    fn decode_mul(instruction: u32) -> Opcode {
+    fn decode_mul(instruction: u32) -> OpcodeArm {
         match instruction.bit(21) {
             true => MLA,
             false => MUL,
         }
     }
-    fn decode_mul_long(instruction: u32) -> Opcode {
+    fn decode_mul_long(instruction: u32) -> OpcodeArm {
         let bit21 = instruction.bit(21);
         match instruction.bit(22) {
             true => match bit21 {
@@ -103,7 +104,7 @@ impl Arm32 {
             },
         }
     }
-    fn decode_hdt(instruction: u32) -> Opcode {
+    fn decode_hdt(instruction: u32) -> OpcodeArm {
         let r = instruction.bit_range(5..=6);
         match instruction.bit(20) {
             true => match r {
@@ -147,14 +148,14 @@ impl Arm32 {
         let cond: Condition = Arm32::get_condition(instruction);
         if instruction.bit_range(4..=27) == 0x12FFF1 {
             return Instruction {
-                opc: BX,
+                opc: Arm32(BX),
                 data: instruction,
                 cond,
             };
         }
         if instruction.bit_range(24..=27) == 0b1111 {
             return Instruction {
-                opc: SWI,
+                opc: Arm32(SWI),
                 data: instruction,
                 cond,
             };
@@ -168,22 +169,22 @@ impl Arm32 {
         // }
         return match instruction.bit_range(25..28) {
             0b011 if instruction.bit(4) => Instruction {
-                opc: UNDEF,
+                opc: Arm32(UNDEF),
                 data: instruction,
                 cond,
             },
             0b101 => Instruction {
-                opc: B,
+                opc: Arm32(B),
                 data: instruction,
                 cond,
             },
             0b100 => Instruction {
-                opc: Arm32::decode_block_data_transfer(instruction),
+                opc: Arm32(Arm32::decode_block_data_transfer(instruction)),
                 data: instruction,
                 cond,
             },
             0b011 | 0b010 => Instruction {
-                opc: Arm32::decode_single_data_transfer(instruction),
+                opc: Arm32(Arm32::decode_single_data_transfer(instruction)),
                 data: instruction,
                 cond,
             },
@@ -193,7 +194,7 @@ impl Arm32 {
                     || p == 0b001
                 {
                     return Instruction {
-                        opc: Arm32::decode_data_processing_psr_transfer(instruction),
+                        opc: Arm32(Arm32::decode_data_processing_psr_transfer(instruction)),
                         data: instruction,
                         cond,
                     };
@@ -201,22 +202,22 @@ impl Arm32 {
                 if instruction.bit_range(4..8) == 0b1001 {
                     return match instruction.bit_range(23..25) {
                         0 => Instruction {
-                            opc: Arm32::decode_mul(instruction),
+                            opc: Arm32(Arm32::decode_mul(instruction)),
                             data: instruction,
                             cond,
                         },
                         0b01 => Instruction {
-                            opc: Arm32::decode_mul_long(instruction),
+                            opc: Arm32(Arm32::decode_mul_long(instruction)),
                             data: instruction,
                             cond,
                         },
                         0b10 => Instruction {
-                            opc: SWP,
+                            opc: Arm32(SWP),
                             data: instruction,
                             cond,
                         },
                         _ => Instruction {
-                            opc: UNDEF,
+                            opc: Arm32(UNDEF),
                             data: instruction,
                             cond,
                         },
@@ -226,19 +227,19 @@ impl Arm32 {
                     && instruction.bit_range(8..=11) == 0
                 {
                     return Instruction {
-                        opc: Arm32::decode_hdt(instruction),
+                        opc: Arm32(Arm32::decode_hdt(instruction)),
                         data: instruction,
                         cond,
                     };
                 }
                 return Instruction {
-                    opc: UNDEF,
+                    opc: Arm32(UNDEF),
                     data: instruction,
                     cond,
                 };
             }
             _ => Instruction {
-                opc: UNDEF,
+                opc: Arm32(UNDEF),
                 data: instruction,
                 cond,
             },

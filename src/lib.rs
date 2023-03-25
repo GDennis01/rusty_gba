@@ -50,8 +50,8 @@ impl CPU {
     }
     pub fn decode(&self, instruction: u32) -> Instruction {
         match &self.mode {
-            ARM => Arm32::decode(instruction),
-            THUMB => Arm32::decode(instruction), //REPLACE WITH THUMB
+            Mode::ARM => Arm32::decode(instruction),
+            Mode::THUMB => Arm32::decode(instruction), //REPLACE WITH THUMB
         }
     }
 }

@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::arm32::isa::Opcode;
+use crate::arm32::isa::OpcodeArm;
 
 pub struct Instruction {
     pub opc: Opcode,
@@ -13,6 +13,20 @@ impl fmt::Display for Instruction {
         match self.cond {
             Condition::AL => write!(f, "{:?} {:x?}", self.opc, self.data),
             _ => write!(f, "{:?}{:?} {:x?}", self.opc, self.cond, self.data),
+        }
+    }
+}
+
+pub enum Opcode {
+    Arm32(OpcodeArm),
+    Thumb(OpcodeArm),
+}
+
+impl fmt::Debug for Opcode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Opcode::Arm32(opc) => write!(f, "{:?}", opc),
+            Opcode::Thumb(opc) => write!(f, "{:?}", opc),
         }
     }
 }
@@ -34,26 +48,4 @@ pub enum Condition {
     LE,
     AL,
     ERR,
-}
-impl fmt::Display for Condition {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Condition::EQ => write!(f, "EQ"),
-            Condition::NE => write!(f, "NE"),
-            Condition::CS => write!(f, "CS"),
-            Condition::CC => write!(f, "CC"),
-            Condition::MI => write!(f, "MI"),
-            Condition::PL => write!(f, "PL"),
-            Condition::VS => write!(f, "VS"),
-            Condition::VC => write!(f, "VC"),
-            Condition::HI => write!(f, "HI"),
-            Condition::LS => write!(f, "LS"),
-            Condition::GE => write!(f, "GE"),
-            Condition::LT => write!(f, "LT"),
-            Condition::GT => write!(f, "GT"),
-            Condition::LE => write!(f, "LE"),
-            Condition::AL => write!(f, "AL"),
-            Condition::ERR => write!(f, "ERR"),
-        }
-    }
 }
