@@ -1,3 +1,4 @@
+// TODO: magari aggiungere le varie varianti di ADD,STR,LDR etc
 #[derive(Debug)]
 pub enum OpcodeThumb {
     ADC,
@@ -18,6 +19,7 @@ pub enum OpcodeThumb {
     LDRH,
     LSL,
     LDSB,
+    LDSH,
     LDRSH,
     LSR,
     MOV,
