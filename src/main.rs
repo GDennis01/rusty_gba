@@ -1,4 +1,4 @@
-pub use rusty_gba::CPU;
+pub use arm7tdmi::CPU;
 use std::{
     fs,
     io::{ErrorKind, Write},

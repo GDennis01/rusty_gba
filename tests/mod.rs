@@ -1,4 +1,4 @@
-use rusty_gba::*;
+use arm7tdmi::*;
 #[cfg(test)]
 #[test]
 fn test_and() {
