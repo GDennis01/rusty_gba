@@ -9,7 +9,6 @@ use isa::OpcodeThumb::*;
 
 pub struct Thumb {}
 impl Thumb {
-    //TODO: Testare il decode
     pub fn decode(instruction: u32) -> Instruction {
         let mut opc = Thumb(UNDEF);
         let cond = AL;
