@@ -3,8 +3,11 @@ pub mod cpu;
 pub mod thumb;
 use std::ops::RangeBounds;
 
+///Simple trait that allows basic bit manipulation.<br>
 pub trait BitRange {
+    ///Returns the bits in the specified range
     fn bit_range<R: RangeBounds<u8>>(&self, range: R) -> Self;
+    ///Returns whether the specified bit is set or not
     fn bit(&self, bit: u8) -> bool;
 }
 impl BitRange for u32 {

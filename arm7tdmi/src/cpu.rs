@@ -22,6 +22,7 @@ const r14_abt: u8 = 29;
 const r13_und: u8 = 30;
 const r14_und: u8 = 31;
 
+///CPU of Arm7tdmi
 pub struct CPU<T: MemoryInterface + Default> {
     registers: [u32; 31],
     //User/Sys, FIQ, IRQ, Supervisor, Abort, Undefined
@@ -54,7 +55,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
         self.mode
     }
 }
-//Program Status Register
+///Program Status Register
 #[derive(Default, Copy, Clone)]
 pub struct PSR {
     register: u32,
@@ -111,6 +112,8 @@ impl PSR {
         }
     }
 }
+///Current Operating Mode. Usually starts in User mode.<br>
+///User and System shares same registers.
 pub enum OperatingMode {
     User = 0b10000,
     FIQ = 0b10001,
