@@ -4,6 +4,7 @@ use std::ops::RangeBounds;
 pub mod arm32;
 pub mod thumb;
 use arm32::Arm32;
+use thumb::Thumb;
 
 pub trait BitRange {
     fn bit_range<R: RangeBounds<u8>>(&self, range: R) -> Self;
@@ -51,7 +52,7 @@ impl CPU {
     pub fn decode(&self, instruction: u32) -> Instruction {
         match &self.mode {
             Mode::ARM => Arm32::decode(instruction),
-            Mode::THUMB => Arm32::decode(instruction), //REPLACE WITH THUMB
+            Mode::THUMB => Thumb::decode(instruction), //REPLACE WITH THUMB
         }
     }
 }

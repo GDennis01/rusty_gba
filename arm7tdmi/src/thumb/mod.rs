@@ -59,10 +59,12 @@ impl Thumb {
                 }
             }
             0b111 => {
-                if instruction.bit(12) {
+                if !instruction.bit(12) && !instruction.bit(11) {
                     opc = Thumb(B); //Format18: Unconditional Branch
-                } else {
+                } else if instruction.bit(12) {
                     opc = Thumb(BL); //Format19: Long branch with Link
+                } else {
+                    opc = Thumb(UNDEF);
                 }
             }
             _ => opc = Thumb(UNDEF),

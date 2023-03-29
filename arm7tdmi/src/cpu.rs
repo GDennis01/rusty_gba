@@ -11,8 +11,8 @@ pub struct Instruction {
 impl fmt::Display for Instruction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.cond {
-            Condition::AL => write!(f, "{:?} {:x?}", self.opc, self.data),
-            _ => write!(f, "{:?}{:?} {:x?}", self.opc, self.cond, self.data),
+            Condition::AL => write!(f, "{:?} {:#06x?}", self.opc, self.data),
+            _ => write!(f, "{:?}{:?} {:#06x?}", self.opc, self.cond, self.data),
         }
     }
 }

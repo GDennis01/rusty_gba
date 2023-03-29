@@ -18,7 +18,7 @@ pub fn main() {
     let mut file = fs::OpenOptions::new()
         .write(true)
         .append(true)
-        .open("log.txt")
+        .open("log_thumb.txt")
         .unwrap();
 
     //create an array of 32 bits and store _bios
@@ -29,7 +29,17 @@ pub fn main() {
     //create a new cpu
     let cpu = CPU::new();
     for ins in &bios {
-        let _ins = cpu.decode(*ins);
+        // Debug for arm
+        // let _ins = cpu.decode(*ins);
+        // if let Err(e) = writeln!(file, "{_ins}") {
+        //     eprintln!("Couldn't write to file: {}", e);
+        // }
+        // Debug for thumb
+        let mut _ins = cpu.decode((*ins & 0xFFFF_0000) >> 16);
+        if let Err(e) = writeln!(file, "{_ins}") {
+            eprintln!("Couldn't write to file: {}", e);
+        }
+        _ins = cpu.decode(*ins & 0x0000_FFFF);
         if let Err(e) = writeln!(file, "{_ins}") {
             eprintln!("Couldn't write to file: {}", e);
         }
