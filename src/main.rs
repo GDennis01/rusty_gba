@@ -1,4 +1,4 @@
-pub use arm7tdmi::CPU;
+pub use arm7tdmi::cpu::CPU;
 use std::{
     fs,
     io::{ErrorKind, Write},

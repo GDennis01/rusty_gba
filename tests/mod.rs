@@ -1,4 +1,4 @@
-use arm7tdmi::*;
+use arm7tdmi::cpu::*;
 #[cfg(test)]
 #[test]
 fn test_and() {

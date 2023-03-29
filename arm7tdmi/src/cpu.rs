@@ -1,12 +1,41 @@
+use crate::{
+    arm32::{isa::OpcodeArm, Arm32},
+    thumb::{isa::OpcodeThumb, Thumb},
+};
 use std::fmt;
-
-use crate::{arm32::isa::OpcodeArm, thumb::isa::OpcodeThumb};
-
 pub struct Instruction {
     pub opc: Opcode,
     pub data: u32,
     pub cond: Condition,
     // pub fx: FxArm32,
+}
+pub enum Mode {
+    ARM,
+    THUMB,
+}
+pub struct CPU {
+    registers: [u32; 16],
+    cpsr: u32,
+    spsr: u32,
+    pipeline: [u32; 3],
+    mode: Mode,
+}
+impl CPU {
+    pub fn new() -> Self {
+        CPU {
+            registers: [0; 16],
+            cpsr: 0,
+            spsr: 0,
+            pipeline: [0; 3],
+            mode: Mode::ARM,
+        }
+    }
+    pub fn decode(&self, instruction: u32) -> Instruction {
+        match &self.mode {
+            Mode::ARM => Arm32::decode(instruction),
+            Mode::THUMB => Thumb::decode(instruction), //REPLACE WITH THUMB
+        }
+    }
 }
 impl fmt::Display for Instruction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
