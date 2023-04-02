@@ -7,8 +7,16 @@ name = "arm7tdmi"
 version = "0.1.0"
 
 [[package]]
+name = "gba"
+version = "0.1.0"
+dependencies = [
+ "arm7tdmi",
+]
+
+[[package]]
 name = "rusty_gba"
 version = "0.1.0"
 dependencies = [
  "arm7tdmi",
+ "gba",
 ]

@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 arm7tdmi = {path = "arm7tdmi"}
+gba = {path = "gba"}

@@ -1,4 +1,4 @@
-use arm7tdmi::cpu::MemoryInterface;
+pub use arm7tdmi::cpu::MemoryInterface;
 pub use arm7tdmi::cpu::CPU;
 use std::{
     fs,
