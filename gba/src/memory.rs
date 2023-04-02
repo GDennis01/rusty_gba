@@ -1,5 +1,7 @@
 use arm7tdmi::cpu::MemoryInterface;
+use std::ops::RangeInclusive;
 //Debug Implementation of memory
+
 pub struct Memory {
     //memory is byte addressable, not word addressable
     //general internal memory
@@ -11,7 +13,7 @@ pub struct Memory {
     palette_ram: [u8; 1024],    //1KByte, 0x0500_0000 to 0x0500_03FF
     video_ram: [u8; 96 * 1024], //96KBytes, 0x0600_0000 to 0x0601_7FFF
     obj_attributes: [u8; 1024], //1Kbyte, 0x0700_0000 to 0x07000_03FF
-    //external memory
+    //external memory, it's actually only 1 region, but it's split into 3 only for wait state
     gamepakrom1: [u8; 32 * 1024 * 1024], //32MB, 0x0800_0000 to 0x09FF_FFFF
     gamepakrom2: [u8; 32 * 1024 * 1024], //32MB, 0x0A00_0000 to 0x0BFF_FFFF
     gamepakrom3: [u8; 32 * 1024 * 1024], //32MB, 0x0C00_0000 to 0x0DFF_FFFF
@@ -39,7 +41,21 @@ impl MemoryInterface for Memory {
         Default::default()
     }
     fn read_8(&self, address: u32) -> u8 {
-        1
+        //TODO: mask address
+        match address {
+            0x0000_0000..=0x000_03FFF => self.bios[address as usize],
+            0x0200_0000..=0x0203_FFFF => self.board_wram[address as usize],
+            0x0300_0000..=0x0300_7FFF => self.chip_wram[address as usize],
+            0x0400_0000..=0x0400_03FE => self.io_registers[address as usize],
+            0x0500_0000..=0x0500_03FF => self.palette_ram[address as usize],
+            0x0600_0000..=0x0601_7FFF => self.video_ram[address as usize],
+            0x0700_0000..=0x0700_03FF => self.obj_attributes[address as usize],
+            0x0800_0000..=0x09FF_FFFF => self.gamepakrom1[address as usize],
+            0x0A00_0000..=0x0BFF_FFFF => self.gamepakrom2[address as usize],
+            0x0C00_0000..=0x0DFF_FFFF => self.gamepakrom3[address as usize],
+            0x0E00_0000..=0x0E00_FFFF => self.gamepaksram[address as usize],
+            _ => panic!("Invalid address: {:#X}", address),
+        }
     }
     fn read_16(&self, address: u32) -> u16 {
         1
