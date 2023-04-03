@@ -30,7 +30,7 @@ pub struct CPU<T: MemoryInterface + Default> {
     pipeline: [u32; 3],
     mode: Mode,
     operating_mode: OperatingMode,
-    memory: T,
+    pub memory: T,
 }
 impl<T: MemoryInterface + Default> CPU<T> {
     pub fn new() -> Self {
