@@ -1,6 +1,4 @@
 use arm7tdmi::cpu::MemoryInterface;
-use std::ops::RangeInclusive;
-//Debug Implementation of memory
 
 pub struct Memory {
     //memory is byte addressable, not word addressable
