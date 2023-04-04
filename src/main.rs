@@ -23,5 +23,5 @@ pub fn main() {
     //create a new cpu
     let mut cpu: CPU<Memory> = CPU::new();
     cpu.memory.init_bios(_bios);
-    cpu.memory.dbg_dump();
+    // cpu.memory.dbg_dump();
 }

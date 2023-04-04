@@ -3,7 +3,7 @@ use arm7tdmi::cpu::MemoryInterface;
 pub struct Memory {
     //memory is byte addressable, not word addressable
     //general internal memory
-    bios: Box<[u8; 16 * 1024]>,        //16KBytes, 0 to 0x000_03FFF
+    pub bios: Box<[u8; 16 * 1024]>,    //16KBytes, 0 to 0x000_03FFF
     board_wram: Box<[u8; 256 * 1024]>, //256KBytes, 0x0200_0000 to 0x0203_FFFF
     chip_wram: Box<[u8; 32 * 1024]>,   //32KBytes, 0x0300_0000 to 0x0300_7FFF
     io_registers: Box<[u8; 1023]>,     //1KByte, 0x0400_0000 to 0x0400_03FE
@@ -110,14 +110,15 @@ impl MemoryInterface for Memory {
         }
     }
     fn write_16(&mut self, address: u32, data: u16) {
-        todo!();
-        // self.write_8(address, ((data & 0xFF) >> 8) as u8);
-        // self.write_8(address + 1, (data & 0xFF00 >> 8) as u8);
+        // todo!();
+        self.write_8(address, data as u8);
+        self.write_8(address + 1, ((data & 0xFF) >> 8) as u8);
     }
     fn write_32(&mut self, address: u32, data: u32) {
-        todo!();
-        // self.write_8(address, (data & 0xFF >> 24) as u8);
-        // self.write_8(address + 1, (data & 0xFF00 >> 16) as u8);
-        // self.write_8(address + 2, (data & 0xFF0000 >> 8) as u8);
+        // todo!();
+        self.write_8(address, (data) as u8);
+        self.write_8(address + 1, (data >> 16) as u8);
+        self.write_8(address + 2, (data >> 16) as u8);
+        self.write_8(address + 3, (data >> 24) as u8);
     }
 }
