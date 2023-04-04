@@ -30,7 +30,7 @@ pub struct CPU<T: MemoryInterface + Default> {
     pipeline: [u32; 3],
     mode: Mode,
     operating_mode: OperatingMode,
-    pub memory: T,
+    pub memory: Box<T>,
 }
 impl<T: MemoryInterface + Default> CPU<T> {
     pub fn new() -> Self {
@@ -40,7 +40,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
             pipeline: [0; 3],
             mode: Mode::ARM,
             operating_mode: OperatingMode::User,
-            memory: T::default(),
+            memory: Box::new(T::default()),
         }
     }
     ///Based on the current operating mode, executes an instruction in Arm or Thumb mode

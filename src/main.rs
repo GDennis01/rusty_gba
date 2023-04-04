@@ -22,5 +22,5 @@ pub fn main() {
     print!("Here");
     //create a new cpu
     let cpu: CPU<Memory> = CPU::new();
-    // cpu.memory.init_bios(_bios);
+    cpu.memory.init_bios(_bios);
 }
