@@ -112,12 +112,12 @@ impl MemoryInterface for Memory {
     fn write_16(&mut self, address: u32, data: u16) {
         // todo!();
         self.write_8(address, data as u8);
-        self.write_8(address + 1, ((data & 0xFF) >> 8) as u8);
+        self.write_8(address + 1, (data >> 8) as u8);
     }
     fn write_32(&mut self, address: u32, data: u32) {
         // todo!();
         self.write_8(address, (data) as u8);
-        self.write_8(address + 1, (data >> 16) as u8);
+        self.write_8(address + 1, (data >> 8) as u8);
         self.write_8(address + 2, (data >> 16) as u8);
         self.write_8(address + 3, (data >> 24) as u8);
     }
