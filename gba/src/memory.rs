@@ -18,11 +18,19 @@ pub struct Memory {
     gamepaksram: Box<[u8; 64 * 1024]>,        //64KBytes, 0x0E00_0000 to 0x0E00_FFFF
 }
 impl Memory {
-    pub fn init_bios(&self, data: Vec<u8>) {
-        let mut x = self.bios.clone();
-        let len = x.len();
+    pub fn init_bios(&mut self, data: Vec<u8>) {
+        let len = self.bios.len();
         print!("{} e  {}", data.len(), len);
-        x[0..len].copy_from_slice(&data[0..len]);
+        self.bios[0..len].copy_from_slice(&data[0..len]);
+    }
+    pub fn dbg_dump(&self) {
+        for item in self.bios.clone().chunks(4).into_iter() {
+            print!("{:#X} ", item[0]);
+            print!("{:#X} ", item[1]);
+            print!("{:#X} ", item[2]);
+            print!("{:#X} ", item[3]);
+            println!();
+        }
     }
 }
 impl Default for Memory {

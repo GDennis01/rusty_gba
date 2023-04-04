@@ -21,6 +21,7 @@ pub fn main() {
     //     .unwrap();
     print!("Here");
     //create a new cpu
-    let cpu: CPU<Memory> = CPU::new();
+    let mut cpu: CPU<Memory> = CPU::new();
     cpu.memory.init_bios(_bios);
+    cpu.memory.dbg_dump();
 }
