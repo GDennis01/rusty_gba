@@ -1,5 +1,6 @@
 use arm7tdmi::cpu::MemoryInterface;
 
+///Simple GBA Memory representation
 pub struct Memory {
     //memory is byte addressable, not word addressable
     //general internal memory

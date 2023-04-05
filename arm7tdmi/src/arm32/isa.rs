@@ -1,4 +1,4 @@
-use crate::cpu::{Instruction, MemoryInterface, CPU};
+use crate::cpu::{Instruction, MemoryInterface, Mode, OperatingMode, CPU};
 use crate::{arm32::Arm32, BitRange};
 use OpcodeArm::*;
 #[derive(Debug)]
@@ -46,9 +46,12 @@ pub enum OpcodeArm {
     DBG,
 }
 impl<T: MemoryInterface + Default> CPU<T> {
-    //HERE ISA ARM32 DEFINITIONS
+    pub fn B(&self, instruction: Instruction) {
+        if self.evaluate_cond(instruction.cond) {
+            return;
+        }
+    }
 }
 // type FxArm32 = fn(&Arm32, u32) -> u8;
 //
-//actual isa definitions
-//TODO
+//TODO:actual isa definitions

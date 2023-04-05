@@ -15,7 +15,7 @@ impl Thumb {
         let data = instruction;
 
         if instruction.bit_range(8..=15) == 0b1101111 {
-            opc = Thumb(SWI) //Format17: Software Interrupt
+            opc = Thumb(SWI); //Format17: Software Interrupt
         }
         match instruction.bit_range(13..=15) {
             0b000 => {
@@ -71,7 +71,7 @@ impl Thumb {
         Instruction { opc, data, cond }
     }
 
-    //Format1: Perform shifting on a Lo reg
+    ///Format1: Perform shifting on a Lo reg
     fn decode_move_shifting_register(instruction: u32) -> Opcode {
         match instruction.bit_range(11..=12) {
             0 => Thumb(LSL), //LSL1
@@ -81,7 +81,7 @@ impl Thumb {
         }
     }
 
-    //Format2: ADD/SUB with Lo reg only and(opt) immediate(3bit) value!
+    ///Format2: ADD/SUB with Lo reg only and(opt) immediate(3bit) value!
     fn decode_add_sub(instruction: u32) -> Opcode {
         if instruction.bit(9) {
             Thumb(SUB) //SUB1
@@ -90,7 +90,7 @@ impl Thumb {
         }
     }
 
-    //Format3: Mov/Cmp/Add/Sub with Lo reg and immediate(8bit) value
+    ///Format3: Mov/Cmp/Add/Sub with Lo reg and immediate(8bit) value
     fn decode_mcas_imm(instruction: u32) -> Opcode {
         match instruction.bit_range(11..=12) {
             0 => Thumb(MOV), //MOV1
@@ -100,7 +100,7 @@ impl Thumb {
             _ => Thumb(UNDEF),
         }
     }
-    //Format4: ALU Operations between Lo reg pair
+    ///Format4: ALU Operations between Lo reg pair
     fn decode_alu_op(instruction: u32) -> Opcode {
         match instruction.bit_range(6..=9) {
             0b0000 => Thumb(AND),
@@ -122,7 +122,7 @@ impl Thumb {
             _ => Thumb(UNDEF),
         }
     }
-    //Format5: Operations between Lo-Hi, Hi-Lo or Hi-Hi reg pairs. Pairs type are indicated by bit(7) and bit(6) flags(H2 and H1)
+    ///Format5: Operations between Lo-Hi, Hi-Lo or Hi-Hi reg pairs. Pairs type are indicated by bit(7) and bit(6) flags(H2 and H1)
     fn decode_hireg_bx(instruction: u32) -> Opcode {
         match instruction.bit_range(8..=9) {
             0b00 => Thumb(ADD), //ADD3
@@ -132,7 +132,7 @@ impl Thumb {
             _ => Thumb(UNDEF),
         }
     }
-    //Format7: Word/Byte transfer between Lo registers and Memory
+    ///Format7: Word/Byte transfer between Lo registers and Memory
     fn decode_loadstore_offset(instruction: u32) -> Opcode {
         match instruction.bit_range(10..=11) {
             //bit(11) is the Load/Store flag, bit(10) is the Word/Byte flag
@@ -143,7 +143,7 @@ impl Thumb {
             _ => Thumb(UNDEF),
         }
     }
-    //Format8: Load (sign-extended)byte/halfword and store halfwords
+    ///Format8: Load (sign-extended)byte/halfword and store halfwords
     fn decode_loadstore_signext_bytehalfword(instruction: u32) -> Opcode {
         match instruction.bit_range(10..=11) {
             //bit(11) is the Load/Store flag, bit(10) is the Word/Byte flag
@@ -154,7 +154,7 @@ impl Thumb {
             _ => Thumb(UNDEF),
         }
     }
-    //Format9: Byte/word transfer between registers using immediate 5/7 bit offset
+    ///Format9: Byte/word transfer between registers using immediate 5/7 bit offset
     fn decode_loadstore_imm(instruction: u32) -> Opcode {
         match instruction.bit_range(11..=12) {
             0b00 => Thumb(STR),  //STR2
@@ -164,7 +164,7 @@ impl Thumb {
             _ => Thumb(UNDEF),
         }
     }
-    //Format10: Halfword transfer between Lo reg and memory
+    ///Format10: Halfword transfer between Lo reg and memory
     fn decode_loadstore_halfword(instruction: u32) -> Opcode {
         if !instruction.bit(11) {
             Thumb(STRH) //STRH2
@@ -172,7 +172,7 @@ impl Thumb {
             Thumb(LDRH) //LDRH2
         }
     }
-    //Format11: SP-relative load stor
+    ///Format11: SP-relative load stor
     fn decode_sprelative_loadstore(instruction: u32) -> Opcode {
         if !instruction.bit(11) {
             Thumb(STR) //STR3
@@ -180,15 +180,15 @@ impl Thumb {
             Thumb(LDR) //LDR4
         }
     }
-    //Format12: Adds an 8bit immediate value to either PC or SP. PC/SP indicated by bit 11
+    ///Format12: Adds an 8bit immediate value to either PC or SP. PC/SP indicated by bit 11
     fn decode_load_address() -> Opcode {
         Thumb(ADD) //ADD4
     }
-    //Format13: Adds a 9bit signed constant to SP. Sign indicated by bit 7
+    ///Format13: Adds a 9bit signed constant to SP. Sign indicated by bit 7
     fn decode_addoffset_sp() -> Opcode {
         Thumb(ADD) //ADD5
     }
-    //Format14: Push Lo reg(and LR) into stack or Pop Lo reg(and PC) from stack based on bit 8(for LR and PC).
+    ///Format14: Push Lo reg(and LR) into stack or Pop Lo reg(and PC) from stack based on bit 8(for LR and PC).
     fn decode_push_pop(instruction: u32) -> Opcode {
         if !instruction.bit(11) {
             Thumb(PUSH)
@@ -196,7 +196,7 @@ impl Thumb {
             Thumb(POP)
         }
     }
-    //Format15: Multiple loading and storing of Lo reg
+    ///Format15: Multiple loading and storing of Lo reg
     fn decode_multiple_loadstore(instruction: u32) -> Opcode {
         if !instruction.bit(11) {
             Thumb(STMIA)
