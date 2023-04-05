@@ -1,3 +1,6 @@
+use crate::cpu::{Instruction, MemoryInterface, CPU};
+use crate::{arm32::Arm32, BitRange};
+use OpcodeArm::*;
 #[derive(Debug)]
 pub enum OpcodeArm {
     ADC,
@@ -41,6 +44,9 @@ pub enum OpcodeArm {
     UMULL,
     UNDEF,
     DBG,
+}
+impl<T: MemoryInterface + Default> CPU<T> {
+    //HERE ISA ARM32 DEFINITIONS
 }
 // type FxArm32 = fn(&Arm32, u32) -> u8;
 //

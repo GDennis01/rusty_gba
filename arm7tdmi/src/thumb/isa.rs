@@ -1,3 +1,5 @@
+use crate::cpu::{MemoryInterface, CPU};
+
 // TODO: magari aggiungere le varie varianti di ADD,STR,LDR etc
 #[derive(Debug)]
 pub enum OpcodeThumb {
@@ -39,4 +41,8 @@ pub enum OpcodeThumb {
     SUB,
     TST,
     UNDEF,
+}
+
+impl<T: MemoryInterface + Default> CPU<T> {
+    //ARM Thumb definitions
 }

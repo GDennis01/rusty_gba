@@ -1,5 +1,8 @@
 use crate::{
-    arm32::{isa::OpcodeArm, Arm32},
+    arm32::{
+        isa::OpcodeArm::{self, *},
+        Arm32,
+    },
     thumb::{isa::OpcodeThumb, Thumb},
     BitRange,
 };
@@ -54,7 +57,54 @@ impl<T: MemoryInterface + Default> CPU<T> {
     pub fn get_mode(&self) -> Mode {
         self.mode
     }
+
+    pub fn execute_arm(instruction: Instruction) {
+        match instruction.opc {
+            Opcode::Arm32(ADC) => todo!(),
+            Opcode::Arm32(ADD) => todo!(),
+            Opcode::Arm32(AND) => todo!(),
+            Opcode::Arm32(B) => todo!(),
+            Opcode::Arm32(BIC) => todo!(),
+            Opcode::Arm32(BX) => todo!(),
+            Opcode::Arm32(CMN) => todo!(),
+            Opcode::Arm32(CMP) => todo!(),
+            Opcode::Arm32(EOR) => todo!(),
+            Opcode::Arm32(LDM) => todo!(),
+            Opcode::Arm32(LDR) => todo!(),
+            Opcode::Arm32(LDRB) => todo!(),
+            Opcode::Arm32(LDRH) => todo!(),
+            Opcode::Arm32(LDRSB) => todo!(),
+            Opcode::Arm32(LDRSH) => todo!(),
+            Opcode::Arm32(MLA) => todo!(),
+            Opcode::Arm32(MOV) => todo!(),
+            Opcode::Arm32(MRS) => todo!(),
+            Opcode::Arm32(MSR) => todo!(),
+            Opcode::Arm32(MUL) => todo!(),
+            Opcode::Arm32(MVN) => todo!(),
+            Opcode::Arm32(ORR) => todo!(),
+            Opcode::Arm32(RSB) => todo!(),
+            Opcode::Arm32(RSC) => todo!(),
+            Opcode::Arm32(SBC) => todo!(),
+            Opcode::Arm32(SMLAL) => todo!(),
+            Opcode::Arm32(SMULL) => todo!(),
+            Opcode::Arm32(STM) => todo!(),
+            Opcode::Arm32(STR) => todo!(),
+            Opcode::Arm32(STRB) => todo!(),
+            Opcode::Arm32(STRH) => todo!(),
+            Opcode::Arm32(SUB) => todo!(),
+            Opcode::Arm32(SWI) => todo!(),
+            Opcode::Arm32(SWP) => todo!(),
+            Opcode::Arm32(SWPB) => todo!(),
+            Opcode::Arm32(TEQ) => todo!(),
+            Opcode::Arm32(TST) => todo!(),
+            Opcode::Arm32(UMLAL) => todo!(),
+            Opcode::Arm32(UMULL) => todo!(),
+            Opcode::Arm32(UNDEF) => todo!(),
+            _ => todo!(),
+        }
+    }
 }
+
 ///Program Status Register
 #[derive(Default, Copy, Clone)]
 pub struct PSR {
