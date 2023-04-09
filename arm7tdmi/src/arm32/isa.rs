@@ -45,10 +45,13 @@ pub enum OpcodeArm {
     DBG,
 }
 impl<T: MemoryInterface + Default> CPU<T> {
+    //TODO: check overflow and add/sub, they might cause bugs in future
+    #[allow(non_snake_case)]
     pub fn BX(&mut self, instruction: u32) {
         todo!()
     }
 
+    #[allow(non_snake_case)]
     /// Adds a signed 2 complement 24 bit offset(shitfted left by 2) to PC
     /// If Link bit is set, overwrites Link Register of current bank with PC
     /// Cycles: 2S + 1N
@@ -61,7 +64,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
         let offset = (instruction.bit_range(0..=23) as i32) << 2;
         self.registers[15] = (self.registers[15] as i32 + offset) as u32;
     }
-
+    #[allow(non_snake_case)]
     /// Rd = Operand 1 AND Operand 2
     pub fn AND(&mut self, instruction: u32) {
         let op1 = self.get_register(instruction.bit_range(16..=19) as u8);
@@ -71,9 +74,10 @@ impl<T: MemoryInterface + Default> CPU<T> {
         // if bit 20, set condition flags
         if instruction.bit(20) {
             self.psr[self.operating_mode].set_c(op2.1);
-            self.set_condition_flags(result as i32);
+            self.set_condition_flags(result as i32, false);
         }
     }
+    #[allow(non_snake_case)]
     /// Rd = Operand 1 XOR Operand 2
     pub fn EOR(&mut self, instruction: u32) {
         let op1 = self.get_register(instruction.bit_range(16..=19) as u8);
@@ -83,83 +87,113 @@ impl<T: MemoryInterface + Default> CPU<T> {
         // if bit 20, set condition flags
         if instruction.bit(20) {
             self.psr[self.operating_mode].set_c(op2.1);
-            self.set_condition_flags(result as i32);
+            self.set_condition_flags(result as i32, false);
         }
     }
+    #[allow(non_snake_case)]
     /// Rd = Operand 1 - Operand 2
     pub fn SUB(&mut self, instruction: u32) {
-        let op1 = self.get_register(instruction.bit_range(16..=19) as u8);
+        let op1 = self.get_register(instruction.bit_range(16..=19) as u8) as i32;
         let op2 = self.get_op2(instruction);
-        let result = (op1 - op2.0) as i32;
+        let result = op1 - op2.0 as i32;
+        let is_overflow = match op1.checked_sub(op2.0 as i32) {
+            Some(_) => false,
+            None => true,
+        };
         self.set_register(instruction.bit_range(12..=15) as u8, result as u32);
         // if bit 20, set condition flags
         if instruction.bit(20) {
             self.psr[self.operating_mode].set_c(op2.1);
-            self.set_condition_flags(result);
+            self.set_condition_flags(result, is_overflow);
         }
     }
-
+    #[allow(non_snake_case)]
     ///Reverse SUB, it swaps order of operand 1 and operand 2.
     pub fn RSB(&mut self, instruction: u32) {
-        let op1 = self.get_register(instruction.bit_range(16..=19) as u8);
+        let op1 = self.get_register(instruction.bit_range(16..=19) as u8) as i32;
         let op2 = self.get_op2(instruction);
-        let result = (op2.0 - op1) as i32;
+        let result = op2.0 as i32 - op1;
+        let is_overflow = match (op2.0 as i32).checked_sub(op1) {
+            Some(_) => false,
+            None => true,
+        };
         self.set_register(instruction.bit_range(12..=15) as u8, result as u32);
         // if bit 20, set condition flags
         if instruction.bit(20) {
             self.psr[self.operating_mode].set_c(op2.1);
-            self.set_condition_flags(result);
+            self.set_condition_flags(result, is_overflow);
         }
     }
+    #[allow(non_snake_case)]
     ///Rd = Operand 1 + Operand 2
     pub fn ADD(&mut self, instruction: u32) {
-        let op1 = self.get_register(instruction.bit_range(16..=19) as u8);
+        let op1 = self.get_register(instruction.bit_range(16..=19) as u8) as i32;
         let op2 = self.get_op2(instruction);
-        let result = (op1 + op2.0) as i32;
+        let result = op1 + op2.0 as i32;
+        let is_overflow = match op1.checked_add(op2.0 as i32) {
+            Some(_) => false,
+            None => true,
+        };
         self.set_register(instruction.bit_range(12..=15) as u8, result as u32);
         // if bit 20, set condition flags
         if instruction.bit(20) {
             self.psr[self.operating_mode].set_c(op2.1);
-            self.set_condition_flags(result);
+            self.set_condition_flags(result, is_overflow);
         }
     }
+    #[allow(non_snake_case)]
     ///Rd = Operand 1 + Operand 2 + C flag.
     pub fn ADC(&mut self, instruction: u32) {
-        let op1 = self.get_register(instruction.bit_range(16..=19) as u8);
+        let op1 = self.get_register(instruction.bit_range(16..=19) as u8) as i32;
         let op2 = self.get_op2(instruction);
-        let result = (op1 + op2.0) as i32 + self.psr[self.operating_mode].get_c() as i32;
+        let result = op1 + op2.0 as i32 + self.psr[self.operating_mode].get_c() as i32;
+        let is_overflow = match op1.checked_add(op2.0 as i32) {
+            Some(_) => false,
+            None => true,
+        };
         self.set_register(instruction.bit_range(12..=15) as u8, result as u32);
         // if bit 20, set condition flags
         if instruction.bit(20) {
             self.psr[self.operating_mode].set_c(op2.1);
-            self.set_condition_flags(result);
+            self.set_condition_flags(result, is_overflow);
         }
     }
+    #[allow(non_snake_case)]
     ///Rd = Operand 1 - Operand 2 + C flag - 1.
     pub fn SBC(&mut self, instruction: u32) {
-        let op1 = self.get_register(instruction.bit_range(16..=19) as u8);
+        let op1 = self.get_register(instruction.bit_range(16..=19) as u8) as i32;
         let op2 = self.get_op2(instruction);
-        let result = (op1 - op2.0) as i32 + self.psr[self.operating_mode].get_c() as i32 - 1;
+        let result = op1 - op2.0 as i32 + self.psr[self.operating_mode].get_c() as i32 - 1;
+        let is_overflow = match op1.checked_sub(op2.0 as i32) {
+            Some(_) => false,
+            None => true,
+        };
         self.set_register(instruction.bit_range(12..=15) as u8, result as u32);
         // if bit 20, set condition flags
         if instruction.bit(20) {
             self.psr[self.operating_mode].set_c(op2.1);
-            self.set_condition_flags(result);
+            self.set_condition_flags(result, is_overflow);
         }
     }
+    #[allow(non_snake_case)]
     ///Rd = Operand 2 - Operand 1 + C flag - 1.
     pub fn RSC(&mut self, instruction: u32) {
-        let op1 = self.get_register(instruction.bit_range(16..=19) as u8);
+        let op1 = self.get_register(instruction.bit_range(16..=19) as u8) as i32;
         let op2 = self.get_op2(instruction);
 
-        let result = (op2.0 - op1) as i32 + self.psr[self.operating_mode].get_c() as i32 - 1;
+        let result = op2.0 as i32 - op1 + self.psr[self.operating_mode].get_c() as i32 - 1;
+        let is_overflow = match (op2.0 as i32).checked_sub(op1) {
+            Some(_) => false,
+            None => true,
+        };
         self.set_register(instruction.bit_range(12..=15) as u8, result as u32);
         // if bit 20, set condition flags
         if instruction.bit(20) {
             self.psr[self.operating_mode].set_c(op2.1);
-            self.set_condition_flags(result);
+            self.set_condition_flags(result, is_overflow);
         }
     }
+    #[allow(non_snake_case)]
     ///Set condition flags for Operand 1 AND Operand 2.
     pub fn TST(&mut self, instruction: u32) {
         let op1 = self.get_register(instruction.bit_range(16..=19) as u8);
@@ -168,9 +202,10 @@ impl<T: MemoryInterface + Default> CPU<T> {
         // if bit 20, set condition flags
         if instruction.bit(20) {
             self.psr[self.operating_mode].set_c(op2.1);
-            self.set_condition_flags(result as i32);
+            self.set_condition_flags(result as i32, false);
         }
     }
+    #[allow(non_snake_case)]
     ///Set condition flags for Operand 1 XOR Operand 2.
     pub fn TEQ(&mut self, instruction: u32) {
         let op1 = self.get_register(instruction.bit_range(16..=19) as u8);
@@ -179,33 +214,43 @@ impl<T: MemoryInterface + Default> CPU<T> {
         // if bit 20, set condition flags
         if instruction.bit(20) {
             self.psr[self.operating_mode].set_c(op2.1);
-            self.set_condition_flags(result as i32);
+            self.set_condition_flags(result as i32, false);
         }
     }
+    #[allow(non_snake_case)]
     ///Set condition flags for Operand 1 - Operand 2.
     pub fn CMP(&mut self, instruction: u32) {
-        let op1 = self.get_register(instruction.bit_range(16..=19) as u8);
+        let op1 = self.get_register(instruction.bit_range(16..=19) as u8) as i32;
         let op2 = self.get_op2(instruction);
-        let result = (op1 - op2.0) as i32;
+        let result = op1 - op2.0 as i32;
+        let is_overflow = match op1.checked_sub(op2.0 as i32) {
+            Some(_) => false,
+            None => true,
+        };
         self.set_register(instruction.bit_range(12..=15) as u8, result as u32);
         // if bit 20, set condition flags
         if instruction.bit(20) {
             self.psr[self.operating_mode].set_c(op2.1);
-            self.set_condition_flags(result);
+            self.set_condition_flags(result, is_overflow);
         }
     }
-    ///Set condition flags for Operand 1 - Operand 2.
+    #[allow(non_snake_case)]
+    ///Set condition flags for Operand 1 + Operand 2.
     pub fn CMN(&mut self, instruction: u32) {
-        let op1 = self.get_register(instruction.bit_range(16..=19) as u8);
+        let op1 = self.get_register(instruction.bit_range(16..=19) as u8) as i32;
         let op2 = self.get_op2(instruction);
-        let result = (op1 + op2.0) as i32;
+        let result = op1 + op2.0 as i32;
+        let is_overflow = match op1.checked_sub(op2.0 as i32) {
+            Some(_) => false,
+            None => true,
+        };
         // if bit 20, set condition flags
         if instruction.bit(20) {
             self.psr[self.operating_mode].set_c(op2.1);
-            self.set_condition_flags(result);
+            self.set_condition_flags(result, is_overflow);
         }
     }
-
+    #[allow(non_snake_case)]
     /// Rd = Operand 1 OR Operand 2
     pub fn ORR(&mut self, instruction: u32) {
         let op1 = self.get_register(instruction.bit_range(16..=19) as u8);
@@ -215,9 +260,10 @@ impl<T: MemoryInterface + Default> CPU<T> {
         // if bit 20, set condition flags
         if instruction.bit(20) {
             self.psr[self.operating_mode].set_c(op2.1);
-            self.set_condition_flags(result as i32);
+            self.set_condition_flags(result as i32, false);
         }
     }
+    #[allow(non_snake_case)]
     /// Rd =  Operand 2
     pub fn MOV(&mut self, instruction: u32) {
         let op2 = self.get_op2(instruction);
@@ -225,9 +271,10 @@ impl<T: MemoryInterface + Default> CPU<T> {
         // if bit 20, set condition flags
         if instruction.bit(20) {
             self.psr[self.operating_mode].set_c(op2.1);
-            self.set_condition_flags(op2.0 as i32);
+            self.set_condition_flags(op2.0 as i32, false);
         }
     }
+    #[allow(non_snake_case)]
     /// Rd = Operand 1 AND NOT Operand 2
     pub fn BIC(&mut self, instruction: u32) {
         let op1 = self.get_register(instruction.bit_range(16..=19) as u8);
@@ -237,9 +284,10 @@ impl<T: MemoryInterface + Default> CPU<T> {
         // if bit 20, set condition flags
         if instruction.bit(20) {
             self.psr[self.operating_mode].set_c(op2.1);
-            self.set_condition_flags(result as i32);
+            self.set_condition_flags(result as i32, false);
         }
     }
+    #[allow(non_snake_case)]
     /// Rd =  NOT Operand 2
     pub fn MVN(&mut self, instruction: u32) {
         let op2 = self.get_op2(instruction);
@@ -247,9 +295,10 @@ impl<T: MemoryInterface + Default> CPU<T> {
         // if bit 20, set condition flags
         if instruction.bit(20) {
             self.psr[self.operating_mode].set_c(op2.1);
-            self.set_condition_flags(op2.0 as i32);
+            self.set_condition_flags(op2.0 as i32, false);
         }
     }
+
     /// In a data-processing instruction, returns second operand.<br>
     /// Based on bit 21, it can be either an immediate value rotated by a certain amount(bit 21 set) or a shifter register(bit 21 clear)
     fn get_op2(&mut self, instruction: u32) -> (u32, bool) {
@@ -288,12 +337,14 @@ impl<T: MemoryInterface + Default> CPU<T> {
         self.compute_shift_operation(value, amount as u8, shift)
     }
 
-    fn set_condition_flags(&mut self, value: i32) {
+    fn set_condition_flags(&mut self, value: i32, overflow: bool) {
         if value < 0 {
             self.psr[self.operating_mode].set_n(true)
-        } else if value == 0 {
+        }
+        if value == 0 {
             self.psr[self.operating_mode].set_z(true)
         }
+        self.psr[self.operating_mode].set_v(overflow);
     }
 
     /// Compute the shift operation based on the [`SHIFT`](enum@SHIFT) type
