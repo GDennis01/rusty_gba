@@ -7,7 +7,7 @@ use crate::{
     thumb::{isa::OpcodeThumb, Thumb},
     BitRange,
 };
-use std::{fmt, ops::Index};
+use std::{fmt, ops::Index, ops::IndexMut};
 
 //Used to index  banked registers.
 const FIQ_OFFSET: usize = 8; //from 16 to 22
@@ -239,6 +239,18 @@ impl Index<OperatingMode> for [PSR; 6] {
             OperatingMode::Supervisor => &self[3],
             OperatingMode::Abort => &self[4],
             OperatingMode::Undefined => &self[5],
+        }
+    }
+}
+impl IndexMut<OperatingMode> for [PSR; 6] {
+    fn index_mut(&mut self, index: OperatingMode) -> &mut Self::Output {
+        match index {
+            OperatingMode::User | OperatingMode::System => &mut self[0],
+            OperatingMode::FIQ => &mut self[1],
+            OperatingMode::IRQ => &mut self[2],
+            OperatingMode::Supervisor => &mut self[3],
+            OperatingMode::Abort => &mut self[4],
+            OperatingMode::Undefined => &mut self[5],
         }
     }
 }
