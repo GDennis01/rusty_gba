@@ -1,6 +1,5 @@
-use crate::cpu::{Instruction, MemoryInterface, Mode, OperatingMode, CPU};
-use crate::{arm32::Arm32, BitRange};
-use OpcodeArm::*;
+use crate::cpu::{MemoryInterface, CPU};
+use crate::BitRange;
 #[derive(Debug)]
 pub enum OpcodeArm {
     ADC,
@@ -46,12 +45,35 @@ pub enum OpcodeArm {
     DBG,
 }
 impl<T: MemoryInterface + Default> CPU<T> {
-    pub fn B(&self, instruction: Instruction) {
-        if self.evaluate_cond(instruction.cond) {
-            return;
+    pub fn BX(&mut self, instruction: u32) {
+        todo!()
+    }
+
+    /// Adds a signed 2 complement 24 bit offset(shitfted left by 2) to PC
+    /// If Link bit is set, overwrites Link Register of current bank with PC
+    /// Cycles: 2S + 1N
+    pub fn B(&mut self, instruction: u32) {
+        //Link bit set
+        if instruction.bit(24) {
+            let pc = self.get_register(15);
+            self.set_register(14, pc);
+        }
+        let offset = (instruction.bit_range(0..=23) as i32) << 2;
+        self.registers[15] = (self.registers[15] as i32 + offset) as u32;
+    }
+
+    pub fn AND(&mut self, instruction: u32) {
+        let op1 = self.get_register(instruction.bit_range(16..=19) as u8);
+        let op2 = self.get_op2(instruction);
+        let result = op1 & op2;
+        self.set_register(instruction.bit_range(12..=15) as u8, result);
+        if instruction.bit(20) {
+            //TODO: set condition code
+            //TODO: cercare di capire come implementare il barrel shifter
         }
     }
+
+    pub fn get_op2(&mut self, instruction: u32) -> u32 {
+        todo!(); //TODO: operand 2
+    }
 }
-// type FxArm32 = fn(&Arm32, u32) -> u8;
-//
-//TODO:actual isa definitions

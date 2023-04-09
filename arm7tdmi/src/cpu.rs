@@ -3,33 +3,24 @@ use crate::{
         isa::OpcodeArm::{self, *},
         Arm32,
     },
+    cpu::OperatingMode::*,
     thumb::{isa::OpcodeThumb, Thumb},
     BitRange,
 };
 use std::{fmt, ops::Index};
 
-//Used to index Special PSR
-const r8_fiq: u8 = 17;
-const r9_fiq: u8 = 18;
-const r10_fiq: u8 = 19;
-const r11_fiq: u8 = 20;
-const r12_fiq: u8 = 21;
-const r13_fiq: u8 = 22;
-const r14_fiq: u8 = 23;
-const r13_irq: u8 = 24;
-const r14_irq: u8 = 25;
-const r13_svc: u8 = 26;
-const r14_svc: u8 = 27;
-const r13_abt: u8 = 28;
-const r14_abt: u8 = 29;
-const r13_und: u8 = 30;
-const r14_und: u8 = 31;
+//Used to index  banked registers.
+const FIQ_OFFSET: usize = 8; //from 16 to 22
+const SVC_OFFSET: usize = 10; //23-24
+const ABT_OFFSET: usize = 12; //25-26
+const IRQ_OFFSET: usize = 14; //27-28
+const UND_OFFSET: usize = 16; //29-30
 
 ///Arm7tdmi's CPU<br>
 ///Has 2 CPU operating modes: 32 bit(Arm) and 16 bit(Thumb)<br>
 ///Has 6 "user" modes, each with its own privileges, used for various Interrupts
 pub struct CPU<T: MemoryInterface + Default> {
-    registers: [u32; 31],
+    pub registers: [u32; 31],
     //User/Sys, FIQ, IRQ, Supervisor, Abort, Undefined
     pub psr: [PSR; 6],
     pipeline: [u32; 3],
@@ -37,6 +28,7 @@ pub struct CPU<T: MemoryInterface + Default> {
     pub operating_mode: OperatingMode,
     pub memory: Box<T>,
 }
+
 impl<T: MemoryInterface + Default> CPU<T> {
     pub fn new() -> Self {
         CPU {
@@ -80,9 +72,49 @@ impl<T: MemoryInterface + Default> CPU<T> {
         }
     }
 
+    ///Get the specified  register value, taking into account banked registers
+    /// # Arguments
+    /// * **reg** - number of register to get from 0 to 15.
+    pub fn get_register(&mut self, reg: u8) -> u32 {
+        //only Hi registers(8-14) are banked
+        if reg < 8 || reg == 15 {
+            return self.registers[reg as usize];
+        }
+        match self.operating_mode {
+            FIQ => self.registers[(reg as usize) + FIQ_OFFSET],
+            IRQ if reg > 12 => self.registers[(reg as usize) + IRQ_OFFSET],
+            Supervisor if reg > 12 => self.registers[(reg as usize) + SVC_OFFSET],
+            Abort if reg > 12 => self.registers[(reg as usize) + ABT_OFFSET],
+            Undefined if reg > 12 => self.registers[(reg as usize) + UND_OFFSET],
+            User | System | _ => self.registers[reg as usize],
+        }
+    }
+
+    /// Set a value to the specified register, taking into account banked registers
+    ///  # Arguments
+    /// * **reg** - number of register to get from 0 to 15.
+    /// * **data** - specified value to set
+    pub fn set_register(&mut self, reg: u8, data: u32) {
+        //only Hi registers(8-14) are banked
+        if reg < 8 || reg == 15 {
+            self.registers[reg as usize] = data;
+            return;
+        }
+        match self.operating_mode {
+            FIQ => self.registers[(reg as usize) + FIQ_OFFSET] = data,
+            IRQ if reg > 12 => self.registers[(reg as usize) + IRQ_OFFSET] = data,
+            Supervisor if reg > 12 => self.registers[(reg as usize) + SVC_OFFSET] = data,
+            Abort if reg > 12 => self.registers[(reg as usize) + ABT_OFFSET] = data,
+            Undefined if reg > 12 => self.registers[(reg as usize) + UND_OFFSET] = data,
+            User | System | _ => self.registers[reg as usize] = data,
+        }
+    }
     //TODO: Using fx pointers?
     ///Execute an arm instruction based on its opcode
-    pub fn execute_arm(instruction: Instruction) {
+    pub fn execute_arm(&self, instruction: Instruction) {
+        if !self.evaluate_cond(instruction.cond) {
+            return;
+        }
         match instruction.opc {
             Opcode::Arm32(ADC) => todo!(),
             Opcode::Arm32(ADD) => todo!(),
@@ -224,7 +256,6 @@ pub enum OperatingMode {
 }
 
 ///Simple trait with methods to read/write 8bit,16 bit or 32 bit.<br>
-///Implementors should use a wrapping structur of an u8 array as underlying data structure that implements this trait
 pub trait MemoryInterface {
     fn new() -> Self;
     fn read_8(&self, address: u32) -> u8;
