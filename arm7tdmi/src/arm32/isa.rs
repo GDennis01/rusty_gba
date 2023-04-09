@@ -62,6 +62,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
         self.registers[15] = (self.registers[15] as i32 + offset) as u32;
     }
 
+    /// Rd = Operand 1 AND Operand 2
     pub fn AND(&mut self, instruction: u32) {
         let op1 = self.get_register(instruction.bit_range(16..=19) as u8);
         let op2 = self.get_op2(instruction);
@@ -70,10 +71,185 @@ impl<T: MemoryInterface + Default> CPU<T> {
         // if bit 20, set condition flags
         if instruction.bit(20) {
             self.psr[self.operating_mode].set_c(op2.1);
+            self.set_condition_flags(result as i32);
+        }
+    }
+    /// Rd = Operand 1 XOR Operand 2
+    pub fn EOR(&mut self, instruction: u32) {
+        let op1 = self.get_register(instruction.bit_range(16..=19) as u8);
+        let op2 = self.get_op2(instruction);
+        let result = op1 ^ op2.0;
+        self.set_register(instruction.bit_range(12..=15) as u8, result);
+        // if bit 20, set condition flags
+        if instruction.bit(20) {
+            self.psr[self.operating_mode].set_c(op2.1);
+            self.set_condition_flags(result as i32);
+        }
+    }
+    /// Rd = Operand 1 - Operand 2
+    pub fn SUB(&mut self, instruction: u32) {
+        let op1 = self.get_register(instruction.bit_range(16..=19) as u8);
+        let op2 = self.get_op2(instruction);
+        let result = (op1 - op2.0) as i32;
+        self.set_register(instruction.bit_range(12..=15) as u8, result as u32);
+        // if bit 20, set condition flags
+        if instruction.bit(20) {
+            self.psr[self.operating_mode].set_c(op2.1);
             self.set_condition_flags(result);
         }
     }
 
+    ///Reverse SUB, it swaps order of operand 1 and operand 2.
+    pub fn RSB(&mut self, instruction: u32) {
+        let op1 = self.get_register(instruction.bit_range(16..=19) as u8);
+        let op2 = self.get_op2(instruction);
+        let result = (op2.0 - op1) as i32;
+        self.set_register(instruction.bit_range(12..=15) as u8, result as u32);
+        // if bit 20, set condition flags
+        if instruction.bit(20) {
+            self.psr[self.operating_mode].set_c(op2.1);
+            self.set_condition_flags(result);
+        }
+    }
+    ///Rd = Operand 1 + Operand 2
+    pub fn ADD(&mut self, instruction: u32) {
+        let op1 = self.get_register(instruction.bit_range(16..=19) as u8);
+        let op2 = self.get_op2(instruction);
+        let result = (op1 + op2.0) as i32;
+        self.set_register(instruction.bit_range(12..=15) as u8, result as u32);
+        // if bit 20, set condition flags
+        if instruction.bit(20) {
+            self.psr[self.operating_mode].set_c(op2.1);
+            self.set_condition_flags(result);
+        }
+    }
+    ///Rd = Operand 1 + Operand 2 + C flag.
+    pub fn ADC(&mut self, instruction: u32) {
+        let op1 = self.get_register(instruction.bit_range(16..=19) as u8);
+        let op2 = self.get_op2(instruction);
+        let result = (op1 + op2.0) as i32 + self.psr[self.operating_mode].get_c() as i32;
+        self.set_register(instruction.bit_range(12..=15) as u8, result as u32);
+        // if bit 20, set condition flags
+        if instruction.bit(20) {
+            self.psr[self.operating_mode].set_c(op2.1);
+            self.set_condition_flags(result);
+        }
+    }
+    ///Rd = Operand 1 - Operand 2 + C flag - 1.
+    pub fn SBC(&mut self, instruction: u32) {
+        let op1 = self.get_register(instruction.bit_range(16..=19) as u8);
+        let op2 = self.get_op2(instruction);
+        let result = (op1 - op2.0) as i32 + self.psr[self.operating_mode].get_c() as i32 - 1;
+        self.set_register(instruction.bit_range(12..=15) as u8, result as u32);
+        // if bit 20, set condition flags
+        if instruction.bit(20) {
+            self.psr[self.operating_mode].set_c(op2.1);
+            self.set_condition_flags(result);
+        }
+    }
+    ///Rd = Operand 2 - Operand 1 + C flag - 1.
+    pub fn RSC(&mut self, instruction: u32) {
+        let op1 = self.get_register(instruction.bit_range(16..=19) as u8);
+        let op2 = self.get_op2(instruction);
+
+        let result = (op2.0 - op1) as i32 + self.psr[self.operating_mode].get_c() as i32 - 1;
+        self.set_register(instruction.bit_range(12..=15) as u8, result as u32);
+        // if bit 20, set condition flags
+        if instruction.bit(20) {
+            self.psr[self.operating_mode].set_c(op2.1);
+            self.set_condition_flags(result);
+        }
+    }
+    ///Set condition flags for Operand 1 AND Operand 2.
+    pub fn TST(&mut self, instruction: u32) {
+        let op1 = self.get_register(instruction.bit_range(16..=19) as u8);
+        let op2 = self.get_op2(instruction);
+        let result = op1 & op2.0;
+        // if bit 20, set condition flags
+        if instruction.bit(20) {
+            self.psr[self.operating_mode].set_c(op2.1);
+            self.set_condition_flags(result as i32);
+        }
+    }
+    ///Set condition flags for Operand 1 XOR Operand 2.
+    pub fn TEQ(&mut self, instruction: u32) {
+        let op1 = self.get_register(instruction.bit_range(16..=19) as u8);
+        let op2 = self.get_op2(instruction);
+        let result = op1 ^ op2.0;
+        // if bit 20, set condition flags
+        if instruction.bit(20) {
+            self.psr[self.operating_mode].set_c(op2.1);
+            self.set_condition_flags(result as i32);
+        }
+    }
+    ///Set condition flags for Operand 1 - Operand 2.
+    pub fn CMP(&mut self, instruction: u32) {
+        let op1 = self.get_register(instruction.bit_range(16..=19) as u8);
+        let op2 = self.get_op2(instruction);
+        let result = (op1 - op2.0) as i32;
+        self.set_register(instruction.bit_range(12..=15) as u8, result as u32);
+        // if bit 20, set condition flags
+        if instruction.bit(20) {
+            self.psr[self.operating_mode].set_c(op2.1);
+            self.set_condition_flags(result);
+        }
+    }
+    ///Set condition flags for Operand 1 - Operand 2.
+    pub fn CMN(&mut self, instruction: u32) {
+        let op1 = self.get_register(instruction.bit_range(16..=19) as u8);
+        let op2 = self.get_op2(instruction);
+        let result = (op1 + op2.0) as i32;
+        // if bit 20, set condition flags
+        if instruction.bit(20) {
+            self.psr[self.operating_mode].set_c(op2.1);
+            self.set_condition_flags(result);
+        }
+    }
+
+    /// Rd = Operand 1 OR Operand 2
+    pub fn ORR(&mut self, instruction: u32) {
+        let op1 = self.get_register(instruction.bit_range(16..=19) as u8);
+        let op2 = self.get_op2(instruction);
+        let result = op1 | op2.0;
+        self.set_register(instruction.bit_range(12..=15) as u8, result);
+        // if bit 20, set condition flags
+        if instruction.bit(20) {
+            self.psr[self.operating_mode].set_c(op2.1);
+            self.set_condition_flags(result as i32);
+        }
+    }
+    /// Rd =  Operand 2
+    pub fn MOV(&mut self, instruction: u32) {
+        let op2 = self.get_op2(instruction);
+        self.set_register(instruction.bit_range(12..=15) as u8, op2.0);
+        // if bit 20, set condition flags
+        if instruction.bit(20) {
+            self.psr[self.operating_mode].set_c(op2.1);
+            self.set_condition_flags(op2.0 as i32);
+        }
+    }
+    /// Rd = Operand 1 AND NOT Operand 2
+    pub fn BIC(&mut self, instruction: u32) {
+        let op1 = self.get_register(instruction.bit_range(16..=19) as u8);
+        let op2 = self.get_op2(instruction);
+        let result = op1 & !op2.0;
+        self.set_register(instruction.bit_range(12..=15) as u8, result);
+        // if bit 20, set condition flags
+        if instruction.bit(20) {
+            self.psr[self.operating_mode].set_c(op2.1);
+            self.set_condition_flags(result as i32);
+        }
+    }
+    /// Rd =  NOT Operand 2
+    pub fn MVN(&mut self, instruction: u32) {
+        let op2 = self.get_op2(instruction);
+        self.set_register(instruction.bit_range(12..=15) as u8, !op2.0);
+        // if bit 20, set condition flags
+        if instruction.bit(20) {
+            self.psr[self.operating_mode].set_c(op2.1);
+            self.set_condition_flags(op2.0 as i32);
+        }
+    }
     /// In a data-processing instruction, returns second operand.<br>
     /// Based on bit 21, it can be either an immediate value rotated by a certain amount(bit 21 set) or a shifter register(bit 21 clear)
     fn get_op2(&mut self, instruction: u32) -> (u32, bool) {
@@ -112,8 +288,8 @@ impl<T: MemoryInterface + Default> CPU<T> {
         self.compute_shift_operation(value, amount as u8, shift)
     }
 
-    fn set_condition_flags(&mut self, value: u32) {
-        if (value as i32) < 0 {
+    fn set_condition_flags(&mut self, value: i32) {
+        if value < 0 {
             self.psr[self.operating_mode].set_n(true)
         } else if value == 0 {
             self.psr[self.operating_mode].set_z(true)
