@@ -1,4 +1,4 @@
-use crate::cpu::{MemoryInterface, CPU};
+use crate::cpu::{MemoryInterface, OperatingMode, CPU};
 use crate::BitRange;
 #[derive(Debug)]
 pub enum OpcodeArm {
@@ -45,6 +45,10 @@ pub enum OpcodeArm {
     DBG,
 }
 impl<T: MemoryInterface + Default> CPU<T> {
+    /*****************************
+     * BRANCH AND BRANCH EXCHANGE*
+     *****************************/
+
     //TODO: check overflow and add/sub, they might cause bugs in future
     #[allow(non_snake_case)]
     pub fn BX(&mut self, instruction: u32) {
@@ -64,6 +68,10 @@ impl<T: MemoryInterface + Default> CPU<T> {
         let offset = (instruction.bit_range(0..=23) as i32) << 2;
         self.registers[15] = (self.registers[15] as i32 + offset) as u32;
     }
+
+    /************************************************
+     * DATA PROCESSING INSTRUCTIONS AND PSR TRANSFER*
+     ************************************************/
     #[allow(non_snake_case)]
     /// Rd = Operand 1 AND Operand 2
     pub fn AND(&mut self, instruction: u32) {
@@ -296,6 +304,47 @@ impl<T: MemoryInterface + Default> CPU<T> {
         if instruction.bit(20) {
             self.psr[self.operating_mode].set_c(op2.1);
             self.set_condition_flags(op2.0 as i32, false);
+        }
+    }
+
+    #[allow(non_snake_case)]
+    /// Transfer (C/S)PSR contents to a specified register
+    /// If bit 22 is set, then content is transfered to a SPSR, otherwise just CPSR
+    /// When in User/Sys mode, SPSR is considered to be CPSR.
+    pub fn MRS(&mut self, instruction: u32) {
+        let psr_content: u32 = if instruction.bit(22) {
+            self.psr[self.operating_mode].register
+        } else {
+            self.psr[0].register
+        };
+
+        self.set_register(instruction.bit_range(12..=15) as u8, psr_content);
+    }
+
+    #[allow(non_snake_case)]
+    /// Transfer register content, or immediate value, to (C/S)PSR
+    /// This allows to change condition flags as well as control bits(the latter only in priviliged mode)
+    pub fn MSR(&mut self, instruction: u32) {
+        let psr_index = if instruction.bit(22) {
+            self.operating_mode as usize
+        } else {
+            0
+        };
+        match instruction.bit_range(12..=21) {
+            //register to psr
+            0b10_1001_1111 => {
+                let reg_content = self.get_register(instruction.bit_range(0..=3) as u8);
+                // if in user mode, only 4 bits(condition flags) gets set
+                let filtered_reg_content = if let OperatingMode::User = self.operating_mode {
+                    (reg_content.bit_range(28..=31) << 28) & reg_content
+                } else {
+                    reg_content
+                }; //TODO: finish this
+                self.psr[psr_index].register = filtered_reg_content
+            }
+            //register/immediate value to psr,flag bits only
+            0b10_1000_1111 => todo!(),
+            _ => panic!("Error on line {} of Arm/isa.rs", line!()),
         }
     }
 

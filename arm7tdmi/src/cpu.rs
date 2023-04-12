@@ -164,7 +164,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
 ///Program Status Register, a special register containing various flag of current CPU state
 #[derive(Default, Copy, Clone)]
 pub struct PSR {
-    register: u32,
+    pub register: u32,
 }
 
 impl PSR {
