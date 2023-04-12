@@ -44,7 +44,22 @@ impl BitRange for u32 {
             std::ops::Bound::Excluded(&n) => n - 1,
             std::ops::Bound::Unbounded => 31,
         };
+
+        //TODO: capire come far funzionare sta roba
+        //left part of data i.e. 0x1000_0001 with range 7-8
+        let msb_self = if end < 31 {
+            self.bit_range(end + 1..) >> start
+        } else {
+            0
+        };
+        let lsb_self: u32 = if start > 0 {
+            self.bit_range(0..start - 1) >> (start - (end - start))
+        } else {
+            0
+        };
+        let masked_self = msb_self | lsb_self;
         let tmp: u32 = data.bit_range(start..=end) << start;
-        tmp | (self << (end - start + 1) >> (end - start + 1))
+        // tmp | (self << (end - start + 1) >> (end - start + 1))
+        tmp | masked_self
     }
 }
