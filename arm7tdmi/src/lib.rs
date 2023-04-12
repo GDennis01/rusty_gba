@@ -48,12 +48,12 @@ impl BitRange for u32 {
         //TODO: capire come far funzionare sta roba
         //left part of data i.e. 0x1000_0001 with range 7-8
         let msb_self = if end < 31 {
-            self.bit_range(end + 1..) >> start
+            self.bit_range(end + 1..) >> end
         } else {
             0
         };
         let lsb_self: u32 = if start > 0 {
-            self.bit_range(0..start - 1) >> (start - (end - start))
+            self.bit_range(0..start - 1)
         } else {
             0
         };
