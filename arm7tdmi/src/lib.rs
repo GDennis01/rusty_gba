@@ -45,21 +45,28 @@ impl BitRange for u32 {
             std::ops::Bound::Unbounded => 31,
         };
 
-        //TODO: capire come far funzionare sta roba
-        //left part of data i.e. 0x1000_0001 with range 7-8
+        //I destruct the number in: bits on the left of the range(MSB) and bits on the right on the range(LSB)
+        //0010 0111 1110 0101 0011 1111 0001 0000
+        //**** **** ****^^^^ ^^^^ ^---- ---- ----
+        // "*" bits are MSB, "-" bits are LSB, "^" bits are the one selected by the specified range
         let msb_self = if end < 31 {
-            self.bit_range(end + 1..) >> end
+            self.bit_range(end + 1..) << (end + 1)
         } else {
             0
         };
+
         let lsb_self: u32 = if start > 0 {
-            self.bit_range(0..start - 1)
+            self.bit_range(0..=start - 1)
         } else {
             0
         };
         let masked_self = msb_self | lsb_self;
         let tmp: u32 = data.bit_range(start..=end) << start;
-        // tmp | (self << (end - start + 1) >> (end - start + 1))
-        tmp | masked_self
+        // println!("MASKED:{:#034b}", masked_self);
+        // println!("TMP   :{:#034b}", tmp);
+        let res = tmp | masked_self;
+        // println!("RES   :{:#034b}", res);
+
+        res
     }
 }
