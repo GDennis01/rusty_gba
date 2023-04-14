@@ -308,8 +308,9 @@ impl<T: MemoryInterface + Default> CPU<T> {
     }
 
     #[allow(non_snake_case)]
-    /// Transfer (C/S)PSR contents to a specified register
-    /// If bit 22 is set, then content is transfered to a SPSR, otherwise just CPSR
+    //TODO: Test thorougly
+    /// Transfer (C/S)PSR contents to a specified register<br>
+    /// If bit 22 is set, then content is transfered to a SPSR, otherwise just CPSR<br>
     /// When in User/Sys mode, SPSR is considered to be CPSR.
     pub fn MRS(&mut self, instruction: u32) {
         let psr_content: u32 = if instruction.bit(22) {
@@ -322,28 +323,34 @@ impl<T: MemoryInterface + Default> CPU<T> {
     }
 
     #[allow(non_snake_case)]
-    /// Transfer register content, or immediate value, to (C/S)PSR
-    /// This allows to change condition flags as well as control bits(the latter only in priviliged mode)
+
+    /// Transfer register content, or immediate value, to (C/S)PSR<br>
+    /// This allows to change condition flags as well as control bits(the latter only in priviliged mode)<br>
+    /// This instruction might cause bugs since armv4 manual isnt fully detailed about this instruction
     pub fn MSR(&mut self, instruction: u32) {
         let psr_index = if instruction.bit(22) {
             self.operating_mode as usize
         } else {
             0
         };
+
         match instruction.bit_range(12..=21) {
-            //register to psr
+            //register to psr, if in user mode, only condition bits are set, otherwise whole register is set
             0b10_1001_1111 => {
                 let reg_content = self.get_register(instruction.bit_range(0..=3) as u8);
-                // if in user mode, only 4 bits(condition flags) gets set
-                let filtered_reg_content = if let OperatingMode::User = self.operating_mode {
-                    (reg_content.bit_range(28..=31) << 28) & reg_content
+
+                if let OperatingMode::User = self.operating_mode {
+                    self.psr[psr_index].register.set_bits(28..=31, reg_content);
                 } else {
-                    reg_content
-                }; //TODO: finish this
-                self.psr[psr_index].register = filtered_reg_content
+                    self.psr[psr_index].register = reg_content;
+                }
             }
             //register/immediate value to psr,flag bits only
-            0b10_1000_1111 => todo!(),
+            0b10_1000_1111 => {
+                let imm_value = self.get_immediate_op(instruction).0;
+                self.psr[psr_index].register.set_bits(28..=31, imm_value);
+            }
+
             _ => panic!("Error on line {} of Arm/isa.rs", line!()),
         }
     }
@@ -358,15 +365,16 @@ impl<T: MemoryInterface + Default> CPU<T> {
         }
     }
 
-    /// Helper method to compute immediate value for the second operand
-    /// Immediate value is computed as a ROR by twice the value specifed in [8..=12]
+    /// Helper method to compute immediate value for the second operand<br>
+    /// Immediate value is computed as a ROR by twice the value specifed in [8..=12]<br>
+    /// Returns a tuple containing immediate value and carry out
     fn get_immediate_op(&mut self, instruction: u32) -> (u32, bool) {
         let imm_value = instruction.bit_range(0..=7);
         let rotate_value = instruction.bit_range(8..=12) * 2;
         self.compute_shift_operation(imm_value, rotate_value as u8, SHIFT::ROR)
     }
 
-    /// Helper method to compute shifted register value for the second operand
+    /// Helper method to compute shifted register value for the second operand<br>
     /// The shifted amount can be either an immediate value or bottom byte of a specified register
     fn get_shifted_op(&mut self, instruction: u32) -> (u32, bool) {
         let shift: SHIFT = self.get_shift(instruction.bit_range(5..=6));
@@ -396,7 +404,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
         self.psr[self.operating_mode].set_v(overflow);
     }
 
-    /// Compute the shift operation based on the [`SHIFT`](enum@SHIFT) type
+    /// Compute the shift operation based on the [`SHIFT`](enum@SHIFT) type<br>
     /// Returns a tuple containing the shifted value and carry out
     /// # Arguments
     /// * **value:** value to be shifted
