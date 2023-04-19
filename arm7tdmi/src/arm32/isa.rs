@@ -323,7 +323,6 @@ impl<T: MemoryInterface + Default> CPU<T> {
     }
 
     #[allow(non_snake_case)]
-
     /// Transfer register content, or immediate value, to (C/S)PSR<br>
     /// This allows to change condition flags as well as control bits(the latter only in priviliged mode)<br>
     /// This instruction might cause bugs since armv4 manual isnt fully detailed about this instruction
@@ -353,6 +352,72 @@ impl<T: MemoryInterface + Default> CPU<T> {
 
             _ => panic!("Error on line {} of Arm/isa.rs", line!()),
         }
+    }
+
+    /************************************************
+     *            Multiply and Multiply Long        *
+     ************************************************/
+    #[allow(non_snake_case)]
+    /// Computes Rd = Rm * Rs, Rn is ignored<br>
+    /// Result is a 32 bit integer<br>
+    /// C flag set to meaningless value and V flag unaffected
+    fn MUL(&mut self, instruction: u32) {
+        let dest = instruction.bit_range(16..=19);
+        let rm = self.get_register(instruction.bit_range(0..=3) as u8) as i32;
+        let rs = self.get_register(instruction.bit_range(8..=11) as u8) as i32;
+        let result = rm.wrapping_mul(rs); //prevents from overflowing
+        self.set_register(dest as u8, result as u32);
+        // if bit 20, set condition flags
+        if instruction.bit(20) {
+            self.set_condition_flags(result, false);
+            self.psr[self.operating_mode].set_c(false); //random value, it couldve been true
+        }
+    }
+    #[allow(non_snake_case)]
+    /// Accumulator form of [`Self::MUL()`] <br>
+    /// Computes Rd = Rm * Rs + Rn
+    fn MLA(&mut self, instruction: u32) {
+        let dest = instruction.bit_range(16..=19);
+        let rm = self.get_register(instruction.bit_range(0..=3) as u8) as i32;
+        let rs = self.get_register(instruction.bit_range(8..=11) as u8) as i32;
+        let rn = self.get_register(instruction.bit_range(12..=15) as u8) as i32;
+        let result = rm.wrapping_mul(rs).wrapping_add(rn);
+        self.set_register(dest as u8, result as u32);
+        // if bit 20, set condition flags
+        if instruction.bit(20) {
+            self.set_condition_flags(result, false);
+            self.psr[self.operating_mode].set_c(false);
+        }
+    }
+
+    #[allow(non_snake_case)]
+    //SMULL and UMULL
+    /// Computes a multiplication between 2 32 bit signed integers and produces a 64 bit results<br>
+    /// RdHi,RdLo = Rm * Rs where the lower 32 bits of the result are written into RdLo, while upper 32 bits into RdHi.<br>
+    /// C and V flags are set to meaningless value.
+    fn SMULL(&mut self, instruction: u32) {
+        todo!()
+    }
+
+    #[allow(non_snake_case)]
+    /// Accumulator form of [Self::SMULL()]
+    /// RdHi,RdLo = Rm * Rs + RdHi,RdLo. Lower 32 bits of the number to add are read from RdLo, upper 32 bits from RdHi
+    fn SMLAL(&mut self, instruction: u32) {
+        todo!();
+    }
+
+    /// Computes a multiplication between 2 32 bit unsigned integers and produces a 64 bit results<br>
+    /// RdHi,RdLo = Rm * Rs where the lower 32 bits of the result are written into RdLo, while upper 32 bits into RdHi.<br>
+    /// C and V flags are set to meaningless value.
+    fn UMULL(&mut self, instruction: u32) {
+        todo!()
+    }
+
+    #[allow(non_snake_case)]
+    /// Accumulator form of [Self::UMULL()]
+    /// RdHi,RdLo = Rm * Rs + RdHi,RdLo. Lower 32 bits of the number to add are read from RdLo, upper 32 bits from RdHi
+    fn UMLAL(&mut self, instruction: u32) {
+        todo!();
     }
 
     /// In a data-processing instruction, returns second operand.<br>
@@ -394,6 +459,10 @@ impl<T: MemoryInterface + Default> CPU<T> {
         self.compute_shift_operation(value, amount as u8, shift)
     }
 
+    /// Set condition flags based on value
+    /// # Arguments
+    /// * <b>value:</b> result to check. If <0 its gonna set N flag, if 0 its gonna set Z flag
+    /// * <b>overflow:</b> if true, its gonna set V flag
     fn set_condition_flags(&mut self, value: i32, overflow: bool) {
         if value < 0 {
             self.psr[self.operating_mode].set_n(true)
@@ -456,6 +525,9 @@ impl<T: MemoryInterface + Default> CPU<T> {
             }
         }
     }
+
+    /// Returns shift type based on a 2 bit value
+    /// Panics if value is greater than 4
     fn get_shift(&mut self, value: u32) -> SHIFT {
         match value {
             0b00 => SHIFT::LSL,
