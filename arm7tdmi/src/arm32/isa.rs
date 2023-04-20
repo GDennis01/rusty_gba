@@ -423,7 +423,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
     /// In a data-processing instruction, returns second operand.<br>
     /// Based on bit 21, it can be either an immediate value rotated by a certain amount(bit 21 set) or a shifter register(bit 21 clear)
     fn get_op2(&mut self, instruction: u32) -> (u32, bool) {
-        if instruction.bit(21) {
+        if instruction.bit(25) {
             self.get_immediate_op(instruction)
         } else {
             self.get_shifted_op(instruction)
@@ -436,7 +436,13 @@ impl<T: MemoryInterface + Default> CPU<T> {
     fn get_immediate_op(&mut self, instruction: u32) -> (u32, bool) {
         let imm_value = instruction.bit_range(0..=7);
         let rotate_value = instruction.bit_range(8..=12) * 2;
-        self.compute_shift_operation(imm_value, rotate_value as u8, SHIFT::ROR)
+
+        self.compute_shift_operation(
+            imm_value,
+            rotate_value as u8,
+            SHIFT::ROR,
+            instruction.bit(25),
+        )
     }
 
     /// Helper method to compute shifted register value for the second operand<br>
@@ -456,7 +462,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
             //this should never happen
             panic!("Error on line {} of Arm/isa.rs", line!());
         }
-        self.compute_shift_operation(value, amount as u8, shift)
+        self.compute_shift_operation(value, amount as u8, shift, false)
     }
 
     /// Set condition flags based on value
@@ -479,7 +485,13 @@ impl<T: MemoryInterface + Default> CPU<T> {
     /// * **value:** value to be shifted
     /// * **amount:** shift amount to apply on **value**
     /// * **shift:** shift type
-    fn compute_shift_operation(&mut self, value: u32, amount: u8, shift: SHIFT) -> (u32, bool) {
+    fn compute_shift_operation(
+        &mut self,
+        value: u32,
+        amount: u8,
+        shift: SHIFT,
+        immediate: bool,
+    ) -> (u32, bool) {
         match shift {
             // LSL #5 -> bits 27-31 are discarded and bit 27 will be carry out
             SHIFT::LSL => {
@@ -513,11 +525,16 @@ impl<T: MemoryInterface + Default> CPU<T> {
             SHIFT::ROR => {
                 // ROR #0 is used to encode RRX: result is shifted right of 1 and bit 31 of result is C's flag
                 // bit 0 of value is carry out
+                // ROR #0 doesnt affect value if dealt with immediate
                 if amount == 0 {
-                    (
-                        ((self.psr[self.operating_mode].get_c() as u32) << 31) | (value >> 1),
-                        value.bit(0),
-                    )
+                    if !immediate {
+                        (
+                            ((self.psr[self.operating_mode].get_c() as u32) << 31) | (value >> 1),
+                            value.bit(0),
+                        )
+                    } else {
+                        (value, value.bit(0))
+                    }
                 } else {
                     let overshoot_bits = value.bit_range(0..amount) << (31 - (amount - 1));
                     ((value >> amount) | overshoot_bits, value.bit(amount - 1))
