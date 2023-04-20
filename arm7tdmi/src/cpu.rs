@@ -111,7 +111,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
     }
     //TODO: Using fx pointers?
     ///Execute an arm instruction based on its opcode
-    pub fn execute_arm(&self, instruction: Instruction) {
+    pub fn execute_arm(&mut self, instruction: Instruction) {
         if !self.evaluate_cond(instruction.cond) {
             return;
         }
@@ -123,7 +123,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
             Opcode::Arm32(BIC) => todo!(),
             Opcode::Arm32(BX) => todo!(),
             Opcode::Arm32(CMN) => todo!(),
-            Opcode::Arm32(CMP) => todo!(),
+            Opcode::Arm32(CMP) => self.CMP(instruction.data),
             Opcode::Arm32(EOR) => todo!(),
             Opcode::Arm32(LDM) => todo!(),
             Opcode::Arm32(LDR) => todo!(),
@@ -132,7 +132,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
             Opcode::Arm32(LDRSB) => todo!(),
             Opcode::Arm32(LDRSH) => todo!(),
             Opcode::Arm32(MLA) => todo!(),
-            Opcode::Arm32(MOV) => todo!(),
+            Opcode::Arm32(MOV) => self.MOV(instruction.data),
             Opcode::Arm32(MRS) => todo!(),
             Opcode::Arm32(MSR) => todo!(),
             Opcode::Arm32(MUL) => todo!(),
@@ -196,23 +196,33 @@ impl PSR {
     //Setters
     #[inline(always)]
     pub fn set_n(&mut self, value: bool) {
-        self.register = self.register.bit_range(31..=31) | (value as u32) << 31;
+        // self.register = self.register.bit_range(31..=31) | (value as u32) << 31;
+        let data: u32 = if value { 0xFFFF_FFFF } else { 0 };
+        self.register = self.register.set_bits(31..=31, data);
     }
     #[inline(always)]
     pub fn set_z(&mut self, value: bool) {
-        self.register = self.register.bit_range(30..=30) | (value as u32) << 30;
+        let data: u32 = if value { 0xFFFF_FFFF } else { 0 };
+        // self.register = self.register.bit_range(30..=30) | (value as u32) << 30;
+        self.register = self.register.set_bits(30..=30, data);
     }
     #[inline(always)]
     pub fn set_c(&mut self, value: bool) {
-        self.register = self.register.bit_range(29..=29) | (value as u32) << 29;
+        // self.register = self.register.bit_range(29..=29) | (value as u32) << 29;
+        let data: u32 = if value { 0xFFFF_FFFF } else { 0 };
+        self.register = self.register.set_bits(29..=29, data);
     }
     #[inline(always)]
     pub fn set_v(&mut self, value: bool) {
-        self.register = self.register.bit_range(28..=28) | (value as u32) << 28;
+        // self.register = self.register.bit_range(28..=28) | (value as u32) << 28;
+        let data: u32 = if value { 0xFFFF_FFFF } else { 0 };
+        self.register = self.register.set_bits(28..=28, data);
     }
     #[inline(always)]
     pub fn set_t(&mut self, value: bool) {
-        self.register = self.register.bit_range(5..=5) | (value as u32) << 5;
+        // self.register = self.register.bit_range(5..=5) | (value as u32) << 5;
+        let data: u32 = if value { 0xFFFF_FFFF } else { 0 };
+        self.register = self.register.set_bits(5..=5, data);
     }
 
     ///Returns the current user operating mode
