@@ -1,5 +1,6 @@
-pub mod cpu;
-pub mod gba;
+// pub mod cpu;
+// pub mod gba;
+pub mod arm32;
 use arm7tdmi::BitRange;
 #[cfg(test)]
 #[test]
@@ -15,6 +16,13 @@ fn set_bits2() {
     let value: u32 = 0x07C0_0000;
     data = data.set_bits(22..=26, value);
     assert_eq!(data, 0x17F4_5678);
+}
+#[test]
+fn set_one_bit() {
+    let mut data: u32 = 0x0;
+    let value: u32 = 0xFFFF_FFFF;
+    data = data.set_bits(30..=30, 0xFFFF_FFFF);
+    assert!(data.bit(30));
 }
 #[test]
 fn set_bits3() {
