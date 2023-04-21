@@ -1,5 +1,6 @@
 # rusty_gba
-A Rust (and emu-dev) learning project.
+An attempt to emulate a GameBoy Advance.
+This is my Rust(and emudev as well) learning project
 
 ## Progress so far
 - Implemented Arm ISA decoder
