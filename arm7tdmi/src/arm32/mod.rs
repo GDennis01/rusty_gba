@@ -32,8 +32,7 @@ impl Arm32 {
                 }
             }
             MSR => {
-                if !instruction.bit(20)
-                    && instruction.bit(21)
+                if instruction.bit_range(20..=21) == 0b10
                     && instruction.bit_range(12..=15) == 0b1111
                 {
                     MSR
@@ -54,32 +53,18 @@ impl Arm32 {
             0b0101 => ADC,
             0b0110 => SBC,
             0b0111 => RSC,
-            0b1000 => {
+            0b1000 | 0b1010 => {
                 return if !instruction.bit(20) {
                     Arm32::decode_psr(instruction, MRS)
                 } else {
                     TST
                 }
             }
-            0b1001 => {
+            0b1001 | 0b1011 => {
                 return if !instruction.bit(20) {
                     Arm32::decode_psr(instruction, MSR)
                 } else {
                     TEQ
-                }
-            }
-            0b1010 => {
-                return if !instruction.bit(20) {
-                    Arm32::decode_psr(instruction, MRS)
-                } else {
-                    CMP
-                }
-            }
-            0b1011 => {
-                return if !instruction.bit(20) {
-                    Arm32::decode_psr(instruction, MSR)
-                } else {
-                    CMN
                 }
             }
             0b1100 => ORR,
@@ -164,14 +149,7 @@ impl Arm32 {
                 cond,
             };
         }
-        // if instruction.bit_range(25..28) == 0b011 && instruction.bit(4) {
-        //     return Instruction {
-        //         opc: UNDEF,
-        //         data: instruction,
-        //         cond,
-        //     };
-        // }
-        return match instruction.bit_range(25..28) {
+        match instruction.bit_range(25..28) {
             0b011 if instruction.bit(4) => Instruction {
                 opc: Arm32(UNDEF),
                 data: instruction,
@@ -247,6 +225,6 @@ impl Arm32 {
                 data: instruction,
                 cond,
             },
-        };
+        }
     }
 }
