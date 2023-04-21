@@ -103,7 +103,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
     pub fn SUB(&mut self, instruction: u32) {
         let op1 = self.get_register(instruction.bit_range(16..=19) as u8) as i32;
         let op2 = self.get_op2(instruction);
-        let result = op1 - op2.0 as i32;
+        let result = op1.wrapping_sub(op2.0 as i32);
         let is_overflow = match op1.checked_sub(op2.0 as i32) {
             Some(_) => false,
             None => true,
@@ -120,7 +120,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
     pub fn RSB(&mut self, instruction: u32) {
         let op1 = self.get_register(instruction.bit_range(16..=19) as u8) as i32;
         let op2 = self.get_op2(instruction);
-        let result = op2.0 as i32 - op1;
+        let result = (op2.0 as i32).wrapping_sub(op1);
         let is_overflow = match (op2.0 as i32).checked_sub(op1) {
             Some(_) => false,
             None => true,
@@ -137,7 +137,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
     pub fn ADD(&mut self, instruction: u32) {
         let op1 = self.get_register(instruction.bit_range(16..=19) as u8) as i32;
         let op2 = self.get_op2(instruction);
-        let result = op1 + op2.0 as i32;
+        let result = op1.wrapping_add(op2.0 as i32);
         let is_overflow = match op1.checked_add(op2.0 as i32) {
             Some(_) => false,
             None => true,
@@ -154,7 +154,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
     pub fn ADC(&mut self, instruction: u32) {
         let op1 = self.get_register(instruction.bit_range(16..=19) as u8) as i32;
         let op2 = self.get_op2(instruction);
-        let result = op1 + op2.0 as i32 + self.psr[self.operating_mode].get_c() as i32;
+        let result = op1.wrapping_add(op2.0 as i32) + self.psr[self.operating_mode].get_c() as i32;
         let is_overflow = match op1.checked_add(op2.0 as i32) {
             Some(_) => false,
             None => true,
@@ -171,7 +171,8 @@ impl<T: MemoryInterface + Default> CPU<T> {
     pub fn SBC(&mut self, instruction: u32) {
         let op1 = self.get_register(instruction.bit_range(16..=19) as u8) as i32;
         let op2 = self.get_op2(instruction);
-        let result = op1 - op2.0 as i32 + self.psr[self.operating_mode].get_c() as i32 - 1;
+        let result =
+            op1.wrapping_sub(op2.0 as i32) + self.psr[self.operating_mode].get_c() as i32 - 1;
         let is_overflow = match op1.checked_sub(op2.0 as i32) {
             Some(_) => false,
             None => true,
@@ -189,7 +190,8 @@ impl<T: MemoryInterface + Default> CPU<T> {
         let op1 = self.get_register(instruction.bit_range(16..=19) as u8) as i32;
         let op2 = self.get_op2(instruction);
 
-        let result = op2.0 as i32 - op1 + self.psr[self.operating_mode].get_c() as i32 - 1;
+        let result =
+            (op2.0 as i32).wrapping_sub(op1) + self.psr[self.operating_mode].get_c() as i32 - 1;
         let is_overflow = match (op2.0 as i32).checked_sub(op1) {
             Some(_) => false,
             None => true,
@@ -230,7 +232,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
     pub fn CMP(&mut self, instruction: u32) {
         let op1 = self.get_register(instruction.bit_range(16..=19) as u8) as i32;
         let op2 = self.get_op2(instruction);
-        let result = op1 - op2.0 as i32;
+        let result = op1.wrapping_sub(op2.0 as i32);
         let is_overflow = match op1.checked_sub(op2.0 as i32) {
             Some(_) => false,
             None => true,
@@ -247,8 +249,8 @@ impl<T: MemoryInterface + Default> CPU<T> {
     pub fn CMN(&mut self, instruction: u32) {
         let op1 = self.get_register(instruction.bit_range(16..=19) as u8) as i32;
         let op2 = self.get_op2(instruction);
-        let result = op1 + op2.0 as i32;
-        let is_overflow = match op1.checked_sub(op2.0 as i32) {
+        let result = op1.wrapping_add(op2.0 as i32);
+        let is_overflow = match op1.checked_add(op2.0 as i32) {
             Some(_) => false,
             None => true,
         };
