@@ -46,6 +46,14 @@ fn set_bits_full() {
     assert_eq!(data, 0x1BB0_CB70);
 }
 #[test]
+fn set_bits_clear() {
+    let mut data: u32 = 0xF000_0001;
+    let value: u32 = 0x0;
+    data = data.set_bits(28..=31, value);
+    assert_eq!(data, 0);
+}
+
+#[test]
 fn set_bits_startzero() {
     let mut data: u32 = 0x283E_B7ED;
     let value: u32 = 0x1BB0_CB70;
