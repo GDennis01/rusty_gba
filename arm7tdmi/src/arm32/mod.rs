@@ -53,20 +53,12 @@ impl Arm32 {
             0b0101 => ADC,
             0b0110 => SBC,
             0b0111 => RSC,
-            0b1000 | 0b1010 => {
-                return if !instruction.bit(20) {
-                    Arm32::decode_psr(instruction, MRS)
-                } else {
-                    TST
-                }
-            }
-            0b1001 | 0b1011 => {
-                return if !instruction.bit(20) {
-                    Arm32::decode_psr(instruction, MSR)
-                } else {
-                    TEQ
-                }
-            }
+            0b1000 | 0b1010 if !instruction.bit(20) => Arm32::decode_psr(instruction, MRS),
+            0b1000 => TST,
+            0b1010 => CMP,
+            0b1001 | 0b1011 if !instruction.bit(20) => Arm32::decode_psr(instruction, MSR),
+            0b1001 => TEQ,
+            0b1011 => CMN,
             0b1100 => ORR,
             0b1101 => MOV,
             0b1110 => BIC,
@@ -82,15 +74,22 @@ impl Arm32 {
     }
     fn decode_mul_long(instruction: u32) -> OpcodeArm {
         let bit21 = instruction.bit(21);
+        // match instruction.bit(22) {
+        //     true => match bit21 {
+        //         true => SMLAL,
+        //         false => SMULL,
+        //     },
+        //     false => match bit21 {
+        //         true => UMLAL,
+        //         false => UMULL,
+        //     },
+        // }
         match instruction.bit(22) {
-            true => match bit21 {
-                true => SMLAL,
-                false => SMULL,
-            },
-            false => match bit21 {
-                true => UMLAL,
-                false => UMULL,
-            },
+            true if bit21 => SMLAL,
+            true if !bit21 => SMULL,
+            false if bit21 => UMLAL,
+            false if !bit21 => UMULL,
+            _ => panic!("ERROR WHILE DECODING MUL LONG"),
         }
     }
     fn decode_hdt(instruction: u32) -> OpcodeArm {

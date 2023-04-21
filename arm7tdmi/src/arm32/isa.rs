@@ -327,7 +327,6 @@ impl<T: MemoryInterface + Default> CPU<T> {
     #[allow(non_snake_case)]
     /// Transfer register content, or immediate value, to (C/S)PSR<br>
     /// This allows to change condition flags as well as control bits(the latter only in priviliged mode)<br>
-    /// This instruction might cause bugs since armv4 manual isnt fully detailed about this instruction
     /// TODO: fixare il decoding dal momento che il manuale è sbagliato
     pub fn MSR(&mut self, instruction: u32) {
         let psr_index = if instruction.bit(22) {
