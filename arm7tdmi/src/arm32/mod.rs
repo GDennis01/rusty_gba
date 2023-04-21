@@ -32,7 +32,10 @@ impl Arm32 {
                 }
             }
             MSR => {
-                if instruction.bit_range(12..=21) == 0b1010011111 {
+                if !instruction.bit(20)
+                    && instruction.bit(21)
+                    && instruction.bit_range(12..=15) == 0b1111
+                {
                     MSR
                 } else {
                     UNDEF

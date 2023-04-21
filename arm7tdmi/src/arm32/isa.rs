@@ -328,6 +328,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
     /// Transfer register content, or immediate value, to (C/S)PSR<br>
     /// This allows to change condition flags as well as control bits(the latter only in priviliged mode)<br>
     /// This instruction might cause bugs since armv4 manual isnt fully detailed about this instruction
+    /// TODO: fixare il decoding dal momento che il manuale è sbagliato
     pub fn MSR(&mut self, instruction: u32) {
         let psr_index = if instruction.bit(22) {
             self.operating_mode as usize
@@ -341,7 +342,8 @@ impl<T: MemoryInterface + Default> CPU<T> {
                 let reg_content = self.get_register(instruction.bit_range(0..=3) as u8);
 
                 if let OperatingMode::User = self.operating_mode {
-                    self.psr[psr_index].register.set_bits(28..=31, reg_content);
+                    self.psr[psr_index].register =
+                        self.psr[psr_index].register.set_bits(28..=31, reg_content);
                 } else {
                     self.psr[psr_index].register = reg_content;
                 }
