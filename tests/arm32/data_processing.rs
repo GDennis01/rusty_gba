@@ -1,5 +1,7 @@
 use arm7tdmi::cpu::*;
 use gba::memory::Memory;
+/// Tests provided by https://github.com/jsmolka/gba-tests/blob/master/arm/data_processing.asm and
+/// decoded,instruction by instruction, through https://shell-storm.org/online/Online-Assembler-and-Disassembler/?inst=cmp+r0%2C0x11&arch=arm&as_format=inline#assembly
 #[cfg(test)]
 #[test]
 fn dp_mov() {
@@ -206,3 +208,5 @@ fn dp_teq() {
 
     assert!(cpu.psr[cpu.operating_mode].get_z()); //Z must be set to 1
 }
+
+fn dp_lsl() {}
