@@ -326,35 +326,57 @@ impl<T: MemoryInterface + Default> CPU<T> {
 
     #[allow(non_snake_case)]
     /// Transfer register content, or immediate value, to (C/S)PSR<br>
-    /// This allows to change condition flags as well as control bits(the latter only in priviliged mode)<br>
-    /// TODO: fixare il decoding dal momento che il manuale è sbagliato
+    /// This allows to change condition flags as well as control bits(the latter only in privileged mode)<br>
     pub fn MSR(&mut self, instruction: u32) {
         let psr_index = if instruction.bit(22) {
-            self.operating_mode as usize
+            self.operating_mode
         } else {
-            0
+            OperatingMode::User
         };
-
-        match instruction.bit_range(12..=21) {
-            //register to psr, if in user mode, only condition bits are set, otherwise whole register is set
-            0b10_1001_1111 => {
-                let reg_content = self.get_register(instruction.bit_range(0..=3) as u8);
-
-                if let OperatingMode::User = self.operating_mode {
-                    self.psr[psr_index].register =
-                        self.psr[psr_index].register.set_bits(28..=31, reg_content);
-                } else {
-                    self.psr[psr_index].register = reg_content;
-                }
+        let data = match instruction.bit(25) {
+            true => self.get_immediate_op(instruction).0,
+            false => self.get_register(instruction.bit_range(0..=3) as u8),
+        };
+        if self.operating_mode != OperatingMode::User {
+            //control bits
+            if instruction.bit(16) {
+                self.psr[psr_index].register = self.psr[psr_index].register.set_bits(0..=7, data);
+                self.update_operating_mode(instruction.bit(22));
             }
-            //register/immediate value to psr,flag bits only
-            0b10_1000_1111 => {
-                let imm_value = self.get_immediate_op(instruction).0;
-                self.psr[psr_index].register.set_bits(28..=31, imm_value);
+            //reserved
+            if instruction.bit(17) {
+                self.psr[psr_index].register = self.psr[psr_index].register.set_bits(8..=15, data);
             }
-
-            _ => panic!("Error on line {} of Arm/isa.rs", line!()),
+            //reserved
+            if instruction.bit(18) {
+                self.psr[psr_index].register = self.psr[psr_index].register.set_bits(16..=23, data);
+            }
         }
+        //flags
+        if instruction.bit(19) {
+            self.psr[psr_index].register = self.psr[psr_index].register.set_bits(24..=31, data);
+        }
+
+        // match instruction.bit_range(12..=21) {
+        //     //register to psr, if in user mode, only condition bits are set, otherwise whole register is set
+        //     0b10_1001_1111 => {
+        //         let reg_content = self.get_register(instruction.bit_range(0..=3) as u8);
+
+        //         if let OperatingMode::User = self.operating_mode {
+        //             self.psr[psr_index].register =
+        //                 self.psr[psr_index].register.set_bits(28..=31, reg_content);
+        //         } else {
+        //             self.psr[psr_index].register = reg_content;
+        //         }
+        //     }
+        //     //register/immediate value to psr,flag bits only
+        //     0b10_1000_1111 => {
+        //         let imm_value = self.get_immediate_op(instruction).0;
+        //         self.psr[psr_index].register.set_bits(28..=31, imm_value);
+        //     }
+
+        //     _ => panic!("Error on line {} of Arm/isa.rs", line!()),
+        // }
     }
 
     /************************************************
@@ -434,11 +456,11 @@ impl<T: MemoryInterface + Default> CPU<T> {
     }
 
     /// Helper method to compute immediate value for the second operand<br>
-    /// Immediate value is computed as a ROR by twice the value specifed in [8..=12]<br>
+    /// Immediate value is computed as a ROR by twice the value specifed in [8..=11]<br>
     /// Returns a tuple containing immediate value and carry out
     fn get_immediate_op(&mut self, instruction: u32) -> (u32, bool) {
         let imm_value = instruction.bit_range(0..=7);
-        let rotate_value = instruction.bit_range(8..=12) * 2;
+        let rotate_value = instruction.bit_range(8..=11) * 2;
 
         self.compute_shift_operation(
             imm_value,

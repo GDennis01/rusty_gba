@@ -90,6 +90,28 @@ impl<T: MemoryInterface + Default> CPU<T> {
         }
     }
 
+    /// Update current operating mode according to CPSR mode bits<br>
+    /// Mostly called when a MSR occur
+    /// * **is_special:** whether to use SPSR(true) or CPSR(false)
+    ///
+    pub fn update_operating_mode(&mut self, is_special: bool) {
+        let index = if is_special {
+            self.operating_mode as usize
+        } else {
+            0
+        };
+        match self.psr[index].register.bit_range(0..=4) {
+            0b10000 => self.operating_mode = OperatingMode::User,
+            0b10001 => self.operating_mode = OperatingMode::FIQ,
+            0b10010 => self.operating_mode = OperatingMode::IRQ,
+            0b10011 => self.operating_mode = OperatingMode::Supervisor,
+            0b10111 => self.operating_mode = OperatingMode::Abort,
+            0b11011 => self.operating_mode = OperatingMode::Undefined,
+            0b11111 => self.operating_mode = OperatingMode::System,
+            _ => self.operating_mode = OperatingMode::User,
+        };
+    }
+
     /// Set a value to the specified register, taking into account banked registers
     ///  # Arguments
     /// * **reg** - number of register to get from 0 to 15.
@@ -266,7 +288,7 @@ impl IndexMut<OperatingMode> for [PSR; 6] {
 }
 ///Current Operating Mode. Usually starts in User mode.<br>
 ///Each operating mode has its own copy of Program Status Register (PSR for short)
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum OperatingMode {
     User = 0b10000,
     FIQ = 0b10001,
