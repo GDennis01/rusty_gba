@@ -71,6 +71,10 @@ impl<T: MemoryInterface + Default> CPU<T> {
             Condition::ERR => false,
         }
     }
+    /// Flush the pipeline.<br>
+    /// Called whenever a write on R15(PC) occurs
+    /// TODO
+    pub fn flush_pipeline(&mut self) {}
 
     ///Get the specified  register value, taking into account banked registers
     /// # Arguments
@@ -138,7 +142,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
             return;
         }
         match instruction.opc {
-            Opcode::Arm32(ADC) => todo!(),
+            Opcode::Arm32(ADC) => self.ADC(instruction.data),
             Opcode::Arm32(ADD) => self.ADD(instruction.data),
             Opcode::Arm32(AND) => self.AND(instruction.data),
             Opcode::Arm32(B) => todo!(),
@@ -161,8 +165,8 @@ impl<T: MemoryInterface + Default> CPU<T> {
             Opcode::Arm32(MVN) => self.MVN(instruction.data),
             Opcode::Arm32(ORR) => self.ORR(instruction.data),
             Opcode::Arm32(RSB) => self.RSB(instruction.data),
-            Opcode::Arm32(RSC) => todo!(),
-            Opcode::Arm32(SBC) => todo!(),
+            Opcode::Arm32(RSC) => self.RSC(instruction.data),
+            Opcode::Arm32(SBC) => self.SBC(instruction.data),
             Opcode::Arm32(SMLAL) => todo!(),
             Opcode::Arm32(SMULL) => todo!(),
             Opcode::Arm32(STM) => todo!(),
@@ -349,20 +353,36 @@ pub enum Mode {
 ///Enum that contains instruction conditions(4 uppermost bits) on Arm instructions
 #[derive(Debug)]
 pub enum Condition {
+    ///Z set
     EQ,
+    ///Z clear
     NE,
+    ///C set
     CS,
+    ///C clear
     CC,
+    ///N set(minus)
     MI,
+    ///N clear(plus)
     PL,
+    ///V set
     VS,
+    ///V clear
     VC,
+    ///C set and Z clear(unsigned higher)
     HI,
+    ///C clear or Z set(unsigned lower or same)
     LS,
+    ///N == V(greater or equal)
     GE,
+    ///N != V(less than)
     LT,
+    ///Z clear and(N == V)(greater than)
     GT,
+    ///Z set or(N != V)(less equal)
     LE,
+    ///Always
     AL,
+    ///Error
     ERR,
 }

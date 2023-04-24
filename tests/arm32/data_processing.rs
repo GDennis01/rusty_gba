@@ -116,6 +116,45 @@ fn dp_add() {
     cpu.execute_arm(cpu.decode(0xE350_0040));
     assert!(cpu.psr[cpu.operating_mode].get_z()); //Z must be set to 1
 }
+#[test]
+fn dp_adc() {
+    let mut cpu: CPU<Memory> = CPU::new();
+    //msr cpsr_f,0  (cpsr_f->sets only flag bits) aka resets flags bits
+    cpu.execute_arm(cpu.decode(0xE328_F000));
+    assert_eq!(cpu.psr[0].register, 0);
+
+    //movs r0,32
+    cpu.execute_arm(cpu.decode(0xE3B0_0020));
+    let mut r0 = cpu.get_register(0 as u8);
+    assert_eq!(r0, 32);
+
+    //adc r0,32
+    cpu.execute_arm(cpu.decode(0xE2A0_0020));
+    r0 = cpu.get_register(0 as u8);
+    assert_eq!(r0, 64);
+
+    //cmp r0,64
+    cpu.execute_arm(cpu.decode(0xE350_0040));
+    assert!(cpu.psr[cpu.operating_mode].get_z());
+
+    //msr  cpsr, FLAG_C
+    cpu.execute_arm(cpu.decode(0xE328_F202));
+    assert!(cpu.psr[cpu.operating_mode].get_c());
+
+    //mov r0,32
+    cpu.execute_arm(cpu.decode(0xE3A0_0020));
+    r0 = cpu.get_register(0 as u8);
+    assert_eq!(r0, 32);
+
+    // adc r0, 32                     E2A0_0020
+    cpu.execute_arm(cpu.decode(0xE2A0_0020));
+    r0 = cpu.get_register(0 as u8);
+    assert_eq!(r0, 65);
+
+    // cmp r0, 65                     E350_0041
+    cpu.execute_arm(cpu.decode(0xE350_0041));
+    assert!(cpu.psr[cpu.operating_mode].get_c() && cpu.psr[cpu.operating_mode].get_z());
+}
 
 #[test]
 fn dp_sub() {
@@ -150,7 +189,88 @@ fn dp_rsb() {
 
     //cmp r0,32
     cpu.execute_arm(cpu.decode(0xE350_0020));
-    assert!(cpu.psr[cpu.operating_mode].get_z()); //Z must be set to 1
+    assert!(cpu.psr[cpu.operating_mode].get_z());
+    //Z must be set to 1
+}
+
+#[test]
+fn dp_sbc() {
+    let mut cpu: CPU<Memory> = CPU::new();
+    //msr cpsr_f,0  (cpsr_f->sets only flag bits) aka resets flags bits
+    cpu.execute_arm(cpu.decode(0xE328_F000));
+    assert_eq!(cpu.psr[0].register, 0);
+
+    //mov r0,64
+    cpu.execute_arm(cpu.decode(0xE3A0_0040));
+    let mut r0 = cpu.get_register(0 as u8);
+    assert_eq!(r0, 64);
+
+    //sbc r0,32
+    cpu.execute_arm(cpu.decode(0xE2C0_0020));
+    r0 = cpu.get_register(0 as u8);
+    assert_eq!(r0, 31);
+
+    //cmp r0,31
+    cpu.execute_arm(cpu.decode(0xE350_001F));
+    assert!(cpu.psr[cpu.operating_mode].get_z());
+
+    //msr  cpsr, FLAG_C
+    cpu.execute_arm(cpu.decode(0xE328_F202));
+    assert!(cpu.psr[cpu.operating_mode].get_c());
+
+    //mov r0,64
+    cpu.execute_arm(cpu.decode(0xE3A0_0040));
+    r0 = cpu.get_register(0 as u8);
+    assert_eq!(r0, 64);
+
+    // sbc r0, 32
+    cpu.execute_arm(cpu.decode(0xE2C0_0020));
+    r0 = cpu.get_register(0 as u8);
+    assert_eq!(r0, 32);
+
+    // cmp r0, 32
+    cpu.execute_arm(cpu.decode(0xE350_0020));
+    assert!(cpu.psr[cpu.operating_mode].get_z() && cpu.psr[cpu.operating_mode].get_c());
+}
+
+#[test]
+fn dp_rsc() {
+    let mut cpu: CPU<Memory> = CPU::new();
+    //msr cpsr_f,0  (cpsr_f->sets only flag bits) aka resets flags bits
+    cpu.execute_arm(cpu.decode(0xE328_F000));
+    assert_eq!(cpu.psr[0].register, 0);
+
+    //mov r0,32
+    cpu.execute_arm(cpu.decode(0xE3A0_0020));
+    let mut r0 = cpu.get_register(0 as u8);
+    assert_eq!(r0, 32);
+
+    //rsc     r0, 64
+    cpu.execute_arm(cpu.decode(0xE2E0_0040));
+    r0 = cpu.get_register(0 as u8);
+    assert_eq!(r0, 31);
+
+    //cmp r0,31
+    cpu.execute_arm(cpu.decode(0xE350_001F));
+    assert!(cpu.psr[cpu.operating_mode].get_z());
+
+    //msr  cpsr, FLAG_C
+    cpu.execute_arm(cpu.decode(0xE328_F202));
+    assert!(cpu.psr[cpu.operating_mode].get_c());
+
+    //mov r0,32
+    cpu.execute_arm(cpu.decode(0xE3A0_0020));
+    r0 = cpu.get_register(0 as u8);
+    assert_eq!(r0, 32);
+
+    //rsc  r0, 64
+    cpu.execute_arm(cpu.decode(0xE2E0_0040));
+    r0 = cpu.get_register(0 as u8);
+    assert_eq!(r0, 32);
+
+    // cmp r0, 32
+    cpu.execute_arm(cpu.decode(0xE350_0020));
+    assert!(cpu.psr[cpu.operating_mode].get_z() && cpu.psr[cpu.operating_mode].get_c());
 }
 
 #[test]
@@ -208,5 +328,127 @@ fn dp_teq() {
 
     assert!(cpu.psr[cpu.operating_mode].get_z()); //Z must be set to 1
 }
+#[test]
+fn dp_lsl() {
+    let mut cpu: CPU<Memory> = CPU::new();
+    // mov     r0, 0xFF00
+    cpu.execute_arm(cpu.decode(0xE3A0_0CFF));
+    let r0 = cpu.get_register(0 as u8);
+    assert_eq!(r0, 0xFF00);
 
-fn dp_lsl() {}
+    //mov r1,0x00FF
+    cpu.execute_arm(cpu.decode(0xE3A0_10FF));
+    let r1 = cpu.get_register(1 as u8);
+    assert_eq!(r1, 0xFF);
+
+    //mov r1, r1, lsl 8
+    cpu.execute_arm(cpu.decode(0xE1A0_1401));
+    let r1 = cpu.get_register(1 as u8);
+    assert_eq!(r1, 0xFF00);
+
+    cpu.execute_arm(cpu.decode(0xE151_0000));
+    assert!(cpu.psr[cpu.operating_mode].get_z());
+}
+
+#[test]
+fn dp_update_carry_rotate_immediate() {
+    let mut cpu: CPU<Memory> = CPU::new();
+    // movs     r0, 0xF000000F
+    cpu.execute_arm(cpu.decode(0xE3B0_02FF));
+    let mut r0 = cpu.get_register(0 as u8);
+    assert_eq!(r0, 0xF000_000F);
+    assert!(!cpu.evaluate_cond(Condition::CC));
+
+    //movs    r0, 0x0FF00000
+    cpu.execute_arm(cpu.decode(0xE3B0_06FF));
+    r0 = cpu.get_register(0 as u8);
+    assert_eq!(r0, 0x0FF00000);
+    assert!(!cpu.evaluate_cond(Condition::CS));
+}
+
+#[test]
+fn dp_update_carry_rotate_register() {
+    let mut cpu: CPU<Memory> = CPU::new();
+    //mov     r0, 0xFF
+    cpu.execute_arm(cpu.decode(0xE3A0_00FF));
+    let mut r0 = cpu.get_register(0 as u8);
+    assert_eq!(r0, 0xFF);
+
+    // mov     r1, 4
+    cpu.execute_arm(cpu.decode(0xE3A0_1004));
+    let mut r1 = cpu.get_register(1 as u8);
+    assert_eq!(r1, 4);
+
+    //movs r2,r0,ror r1
+    cpu.execute_arm(cpu.decode(0xE1B0_2170));
+    let r2 = cpu.get_register(2 as u8);
+    assert_eq!(r2, 0xF000_000F);
+    assert!(!cpu.evaluate_cond(Condition::CC));
+
+    // mov     r0, 0xF0
+    cpu.execute_arm(cpu.decode(0xE3A0_00F0));
+    r0 = cpu.get_register(0 as u8);
+    assert_eq!(r0, 0xF0);
+
+    // mov     r1, 4
+    cpu.execute_arm(cpu.decode(0xE3A0_1004));
+    r1 = cpu.get_register(1 as u8);
+    assert_eq!(r1, 4);
+
+    //movs r2,r0,ror r1
+    cpu.execute_arm(cpu.decode(0xE1B0_2170));
+    let r2 = cpu.get_register(2 as u8);
+    assert_eq!(r2, 0xF);
+    assert!(!cpu.evaluate_cond(Condition::CS));
+}
+
+#[test]
+fn dp_update_carry_rotate_register2() {
+    let mut cpu: CPU<Memory> = CPU::new();
+    //mov     r0, 0xFF
+    cpu.execute_arm(cpu.decode(0xE3A0_00FF));
+    let mut r0 = cpu.get_register(0 as u8);
+    assert_eq!(r0, 0xFF);
+
+    //movs r1,r0,ror 4
+    cpu.execute_arm(cpu.decode(0xE1B0_1260));
+    let mut r1 = cpu.get_register(1 as u8);
+    assert_eq!(r1, 0xF000_000F);
+    assert!(!cpu.evaluate_cond(Condition::CC));
+
+    //mov     r0, 0xF0
+    cpu.execute_arm(cpu.decode(0xE3A0_00F0));
+    r0 = cpu.get_register(0 as u8);
+    assert_eq!(r0, 0xF0);
+
+    //movs r1,r0,ror 4
+    cpu.execute_arm(cpu.decode(0xE1B0_1260));
+    r1 = cpu.get_register(1 as u8);
+    assert_eq!(r1, 0xF);
+    assert!(!cpu.evaluate_cond(Condition::CS));
+}
+
+#[test]
+fn dp_shift_special() {
+    let mut cpu: CPU<Memory> = CPU::new();
+    //mov     r0, 0x0
+    cpu.execute_arm(cpu.decode(0xE3A0_0000));
+    let r0 = cpu.get_register(0 as u8);
+    assert_eq!(r0, 0x0);
+
+    //msr  cpsr, FLAG_C
+    cpu.execute_arm(cpu.decode(0xE328_F202));
+    assert!(cpu.psr[cpu.operating_mode].get_c());
+
+    //       movs    r0, r0, rrx E1B00060
+    cpu.execute_arm(cpu.decode(0xE1B0_0060));
+    let r0 = cpu.get_register(0 as u8);
+    assert_eq!(r0, 0x8000_0000);
+    assert!(!cpu.evaluate_cond(Condition::CS));
+
+    //       cmp     r0, 1 shl 31
+    cpu.execute_arm(cpu.decode(0xE350_0102));
+    assert!(cpu.psr[cpu.operating_mode].get_z());
+}
+
+//TODO: test relativi a PC(t221)(bisogna prima implementare il pipelining,prefetch etc)
