@@ -335,7 +335,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
     pub fn MOV(&mut self, instruction: u32) {
         let rd: u8 = instruction.bit_range(12..=15) as u8;
         let op2 = self.get_op2(instruction);
-        self.wrap_set_reg_condflags(op2.0, rd, op2.1, false, false, instruction.bit(20));
+          self.wrap_set_reg_condflags(op2.0, rd, op2.1, false, false, instruction.bit(20));
     }
 
     #[allow(non_snake_case)]
@@ -518,7 +518,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
     fn get_shifted_op(&mut self, instruction: u32) -> (u32, bool) {
         let shift: SHIFT = self.get_shift(instruction.bit_range(5..=6));
         let rm: u8 = instruction.bit_range(0..=3) as u8;
-        let value: u32 = self.get_register(instruction.bit_range(0..=3) as u8);
+        let value: u32 = self.get_register(rm);
         let amount: u32;
 
         // if bit 4 is clear, then the shifted amount is an immediate value
@@ -608,7 +608,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
                             value.bit(0),
                         )
                     } else {
-                        (value, value.bit(0))
+                        (value, self.psr[self.operating_mode].get_c())
                     }
                 } else {
                     let overshoot_bits = value.bit_range(0..amount) << (31 - (amount - 1));
