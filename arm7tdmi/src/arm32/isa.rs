@@ -128,7 +128,14 @@ impl<T: MemoryInterface + Default> CPU<T> {
         let op1 = self.get_op1(instruction);
         let op2 = self.get_op2(instruction);
         let result = op1 & op2.0;
-        self.wrap_set_reg_condflags(result, rd, op2.1, false, false, instruction.bit(20))
+        self.wrap_set_reg_condflags(
+            result,
+            rd,
+            op2.1,
+            self.psr[self.operating_mode].get_v(),
+            false,
+            instruction.bit(20),
+        )
     }
     #[allow(non_snake_case)]
     /// Rd = Operand 1 XOR Operand 2
@@ -137,7 +144,14 @@ impl<T: MemoryInterface + Default> CPU<T> {
         let op1 = self.get_op1(instruction);
         let op2 = self.get_op2(instruction);
         let result = op1 ^ op2.0;
-        self.wrap_set_reg_condflags(result, rd, op2.1, false, false, instruction.bit(20));
+        self.wrap_set_reg_condflags(
+            result,
+            rd,
+            op2.1,
+            self.psr[self.operating_mode].get_v(),
+            false,
+            instruction.bit(20),
+        );
     }
     #[allow(non_snake_case)]
     /// Rd = Operand 1 - Operand 2
@@ -270,7 +284,14 @@ impl<T: MemoryInterface + Default> CPU<T> {
         let op2 = self.get_op2(instruction);
         let result = op1 & op2.0;
 
-        self.wrap_set_reg_condflags(result as u32, 0, op2.1, false, true, instruction.bit(20));
+        self.wrap_set_reg_condflags(
+            result as u32,
+            0,
+            op2.1,
+            self.psr[self.operating_mode].get_v(),
+            true,
+            instruction.bit(20),
+        );
     }
     #[allow(non_snake_case)]
     ///Set condition flags for Operand 1 XOR Operand 2.
@@ -279,7 +300,14 @@ impl<T: MemoryInterface + Default> CPU<T> {
         let op2 = self.get_op2(instruction);
         let result = op1 ^ op2.0;
 
-        self.wrap_set_reg_condflags(result as u32, 0, op2.1, false, true, instruction.bit(20));
+        self.wrap_set_reg_condflags(
+            result as u32,
+            0,
+            op2.1,
+            self.psr[self.operating_mode].get_v(),
+            true,
+            instruction.bit(20),
+        );
     }
     #[allow(non_snake_case)]
     ///Set condition flags for Operand 1 - Operand 2.
@@ -328,14 +356,28 @@ impl<T: MemoryInterface + Default> CPU<T> {
         let op1 = self.get_op1(instruction);
         let op2 = self.get_op2(instruction);
         let result = op1 | op2.0;
-        self.wrap_set_reg_condflags(result as u32, rd, op2.1, false, false, instruction.bit(20));
+        self.wrap_set_reg_condflags(
+            result as u32,
+            rd,
+            op2.1,
+            self.psr[self.operating_mode].get_v(),
+            false,
+            instruction.bit(20),
+        );
     }
     #[allow(non_snake_case)]
     /// Rd =  Operand 2
     pub fn MOV(&mut self, instruction: u32) {
         let rd: u8 = instruction.bit_range(12..=15) as u8;
         let op2 = self.get_op2(instruction);
-        self.wrap_set_reg_condflags(op2.0, rd, op2.1, false, false, instruction.bit(20));
+        self.wrap_set_reg_condflags(
+            op2.0,
+            rd,
+            op2.1,
+            self.psr[self.operating_mode].get_v(),
+            false,
+            instruction.bit(20),
+        );
     }
 
     #[allow(non_snake_case)]
@@ -345,14 +387,28 @@ impl<T: MemoryInterface + Default> CPU<T> {
         let op1 = self.get_op1(instruction);
         let op2 = self.get_op2(instruction);
         let result = op1 & !op2.0;
-        self.wrap_set_reg_condflags(result as u32, rd, op2.1, false, false, instruction.bit(20));
+        self.wrap_set_reg_condflags(
+            result as u32,
+            rd,
+            op2.1,
+            self.psr[self.operating_mode].get_v(),
+            false,
+            instruction.bit(20),
+        );
     }
     #[allow(non_snake_case)]
     /// Rd =  NOT Operand 2
     pub fn MVN(&mut self, instruction: u32) {
         let rd: u8 = instruction.bit_range(12..=15) as u8;
         let op2 = self.get_op2(instruction);
-        self.wrap_set_reg_condflags(!op2.0 as u32, rd, op2.1, false, false, instruction.bit(20));
+        self.wrap_set_reg_condflags(
+            !op2.0 as u32,
+            rd,
+            op2.1,
+            self.psr[self.operating_mode].get_v(),
+            false,
+            instruction.bit(20),
+        );
     }
 
     #[allow(non_snake_case)]
