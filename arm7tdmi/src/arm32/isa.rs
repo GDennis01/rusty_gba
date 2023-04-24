@@ -335,7 +335,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
     pub fn MOV(&mut self, instruction: u32) {
         let rd: u8 = instruction.bit_range(12..=15) as u8;
         let op2 = self.get_op2(instruction);
-          self.wrap_set_reg_condflags(op2.0, rd, op2.1, false, false, instruction.bit(20));
+        self.wrap_set_reg_condflags(op2.0, rd, op2.1, false, false, instruction.bit(20));
     }
 
     #[allow(non_snake_case)]
@@ -352,7 +352,6 @@ impl<T: MemoryInterface + Default> CPU<T> {
     pub fn MVN(&mut self, instruction: u32) {
         let rd: u8 = instruction.bit_range(12..=15) as u8;
         let op2 = self.get_op2(instruction);
-        self.set_register(instruction.bit_range(12..=15) as u8, !op2.0);
         self.wrap_set_reg_condflags(!op2.0 as u32, rd, op2.1, false, false, instruction.bit(20));
     }
 
@@ -412,7 +411,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
     /// Computes Rd = Rm * Rs, Rn is ignored<br>
     /// Result is a 32 bit integer<br>
     /// C flag set to meaningless value and V flag unaffected
-    fn MUL(&mut self, instruction: u32) {
+    pub fn MUL(&mut self, instruction: u32) {
         let dest = instruction.bit_range(16..=19);
         let rm = self.get_register(instruction.bit_range(0..=3) as u8) as i32;
         let rs = self.get_register(instruction.bit_range(8..=11) as u8) as i32;
@@ -427,7 +426,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
     #[allow(non_snake_case)]
     /// Accumulator form of [`Self::MUL()`] <br>
     /// Computes Rd = Rm * Rs + Rn
-    fn MLA(&mut self, instruction: u32) {
+    pub fn MLA(&mut self, instruction: u32) {
         let dest = instruction.bit_range(16..=19);
         let rm = self.get_register(instruction.bit_range(0..=3) as u8) as i32;
         let rs = self.get_register(instruction.bit_range(8..=11) as u8) as i32;
