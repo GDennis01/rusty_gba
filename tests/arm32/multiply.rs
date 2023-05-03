@@ -134,7 +134,7 @@ fn umull() {
     let mut cpu: CPU<Memory> = CPU::new();
     //mov     r0, 4
     cpu.execute_arm(cpu.decode(0xE3A0_0004));
-    let mut r0 = cpu.get_register(0u8) as i32;
+    let r0 = cpu.get_register(0u8) as i32;
     assert_eq!(r0, 4);
 
     // mov     r1, 8
@@ -151,5 +151,30 @@ fn umull() {
 
     //        cmp     r3, 0
     cpu.execute_arm(cpu.decode(0xE353_0000));
+    assert!(cpu.psr[cpu.operating_mode].get_z());
+}
+
+#[test]
+fn umull2() {
+    let mut cpu: CPU<Memory> = CPU::new();
+    //mov     r0, -1
+    cpu.execute_arm(cpu.decode(0xE3E0_0000));
+    let r0 = cpu.get_register(0u8) as i32;
+    assert_eq!(r0, -1);
+
+    // mov     r1, -1
+    cpu.execute_arm(cpu.decode(0xE3E0_1000));
+    let r1 = cpu.get_register(1u8) as i32;
+    assert_eq!(r1, -1);
+
+    //        umull   r2, r3, r0, r1
+    cpu.execute_arm(cpu.decode(0xE083_2190));
+
+    //        cmp     r2, 1
+    cpu.execute_arm(cpu.decode(0xE352_0001));
+    assert!(cpu.psr[cpu.operating_mode].get_z());
+
+    //        cmp     r3, -2
+    cpu.execute_arm(cpu.decode(0xE373_0002));
     assert!(cpu.psr[cpu.operating_mode].get_z());
 }
