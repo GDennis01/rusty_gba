@@ -168,7 +168,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
             Opcode::Arm32(RSC) => self.RSC(instruction.data),
             Opcode::Arm32(SBC) => self.SBC(instruction.data),
             Opcode::Arm32(SMLAL) => todo!(),
-            Opcode::Arm32(SMULL) => todo!(),
+            Opcode::Arm32(SMULL) => self.SMULL(instruction.data),
             Opcode::Arm32(STM) => todo!(),
             Opcode::Arm32(STR) => todo!(),
             Opcode::Arm32(STRB) => todo!(),
@@ -180,7 +180,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
             Opcode::Arm32(TEQ) => self.TEQ(instruction.data),
             Opcode::Arm32(TST) => self.TST(instruction.data),
             Opcode::Arm32(UMLAL) => todo!(),
-            Opcode::Arm32(UMULL) => todo!(),
+            Opcode::Arm32(UMULL) => self.UMULL(instruction.data),
             Opcode::Arm32(UNDEF) => todo!(),
             _ => todo!(),
         }
