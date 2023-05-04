@@ -1,0 +1,5 @@
+# if you target an arch which you do not have a core library for, or alloc library for already compiled/existing for you, rust will compile and make it themselves.
+# used by every subcrates
+[unstable]
+build-std = ["core", "alloc"]
+build-std-features = ["compiler-builtins-mem"]

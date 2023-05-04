@@ -1,7 +1,13 @@
+#![no_std]
+#[macro_use]
+extern crate alloc;
+extern crate core;
+
 pub mod arm32;
 pub mod cpu;
 pub mod thumb;
-use std::ops::{BitOrAssign, RangeBounds};
+// use std::ops::{BitOrAssign, RangeBounds};
+use core::ops::RangeBounds;
 
 ///Simple trait that allows basic bit manipulation.<br>
 pub trait BitRange {
@@ -18,14 +24,14 @@ pub trait BitRange {
 impl BitRange for u32 {
     fn bit_range<R: RangeBounds<u8>>(&self, range: R) -> Self {
         let start = match range.start_bound() {
-            std::ops::Bound::Included(&n) => n,
-            std::ops::Bound::Excluded(&n) => n - 1,
-            std::ops::Bound::Unbounded => 0,
+            core::ops::Bound::Included(&n) => n,
+            core::ops::Bound::Excluded(&n) => n - 1,
+            core::ops::Bound::Unbounded => 0,
         };
         let end: u8 = match range.end_bound() {
-            std::ops::Bound::Included(&n) => n,
-            std::ops::Bound::Excluded(&n) => n - 1,
-            std::ops::Bound::Unbounded => 31,
+            core::ops::Bound::Included(&n) => n,
+            core::ops::Bound::Excluded(&n) => n - 1,
+            core::ops::Bound::Unbounded => 31,
         };
         (self << (31 - end)) >> (31 - (end - start))
     }
@@ -35,14 +41,14 @@ impl BitRange for u32 {
 
     fn set_bits<R: RangeBounds<u8>>(&self, range: R, data: u32) -> Self {
         let start = match range.start_bound() {
-            std::ops::Bound::Included(&n) => n,
-            std::ops::Bound::Excluded(&n) => n - 1,
-            std::ops::Bound::Unbounded => 0,
+            core::ops::Bound::Included(&n) => n,
+            core::ops::Bound::Excluded(&n) => n - 1,
+            core::ops::Bound::Unbounded => 0,
         };
         let end: u8 = match range.end_bound() {
-            std::ops::Bound::Included(&n) => n,
-            std::ops::Bound::Excluded(&n) => n - 1,
-            std::ops::Bound::Unbounded => 31,
+            core::ops::Bound::Included(&n) => n,
+            core::ops::Bound::Excluded(&n) => n - 1,
+            core::ops::Bound::Unbounded => 31,
         };
 
         //I destruct the number in: bits on the left of the range(MSB) and bits on the right on the range(LSB)

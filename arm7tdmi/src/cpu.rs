@@ -7,7 +7,9 @@ use crate::{
     thumb::{isa::OpcodeThumb, Thumb},
     BitRange,
 };
-use std::{fmt, ops::Index, ops::IndexMut};
+use alloc::boxed::Box;
+use core::{fmt, ops::Index, ops::IndexMut};
+// use std::{fmt, ops::Index, ops::IndexMut};
 
 //Used to index  banked registers.
 const FIQ_OFFSET: usize = 8; //from 16 to 22
