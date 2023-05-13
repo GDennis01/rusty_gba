@@ -49,7 +49,6 @@ impl<T: MemoryInterface + Default> CPU<T> {
      * BRANCH AND BRANCH EXCHANGE*
      *****************************/
 
-    //TODO: check overflow and add/sub, they might cause bugs in future
     #[allow(non_snake_case)]
     pub fn BX(&mut self, instruction: u32) {
         todo!()
@@ -475,8 +474,12 @@ impl<T: MemoryInterface + Default> CPU<T> {
         self.set_register(dest as u8, result as u32);
         // if bit 20, set condition flags
         if instruction.bit(20) {
-            self.set_condition_flags(result, false);
-            self.psr[self.operating_mode].set_c(false); //random value, it couldve been true
+            let v = self.psr[self.operating_mode].get_v();
+            let c = self.psr[self.operating_mode].get_c();
+
+            self.set_condition_flags(result, v);
+            self.psr[self.operating_mode].set_c(c);
+            //random value, it couldve been true
         }
     }
     #[allow(non_snake_case)]
@@ -491,8 +494,11 @@ impl<T: MemoryInterface + Default> CPU<T> {
         self.set_register(dest as u8, result as u32);
         // if bit 20, set condition flags
         if instruction.bit(20) {
-            self.set_condition_flags(result, false);
-            self.psr[self.operating_mode].set_c(false);
+            let v = self.psr[self.operating_mode].get_v();
+            let c = self.psr[self.operating_mode].get_c();
+
+            self.set_condition_flags(result, v);
+            self.psr[self.operating_mode].set_c(c);
         }
     }
 
@@ -503,10 +509,10 @@ impl<T: MemoryInterface + Default> CPU<T> {
     /// C and V flags are set to meaningless value.
     pub fn SMULL(&mut self, instruction: u32) {
         let dest_hi = instruction.bit_range(16..=19);
-        let dest_lo = instruction.bit_range(12..=115);
+        let dest_lo = instruction.bit_range(12..=15);
 
-        let rm = self.get_register(instruction.bit_range(0..=3) as u8) as i64;
-        let rs = self.get_register(instruction.bit_range(8..=11) as u8) as i64;
+        let rm = self.get_register(instruction.bit_range(0..=3) as u8) as i32 as i64;
+        let rs = self.get_register(instruction.bit_range(8..=11) as u8) as i32 as i64;
         let result: i64 = rm.wrapping_mul(rs);
 
         let result_hi: u32 = (result >> 32) as u32; //upper 32 bits
@@ -531,19 +537,48 @@ impl<T: MemoryInterface + Default> CPU<T> {
     #[allow(non_snake_case)]
     /// Accumulator form of [Self::SMULL()]
     /// RdHi,RdLo = Rm * Rs + RdHi,RdLo. Lower 32 bits of the number to add are read from RdLo, upper 32 bits from RdHi
-    fn SMLAL(&mut self, instruction: u32) {
-        todo!();
+    pub fn SMLAL(&mut self, instruction: u32) {
+        let dest_hi = instruction.bit_range(16..=19);
+        let dest_lo = instruction.bit_range(12..=15);
+
+        let rm = self.get_register(instruction.bit_range(0..=3) as u8) as i32 as i64;
+        let rs = self.get_register(instruction.bit_range(8..=11) as u8) as i32 as i64;
+
+        //accumulate part
+        let dest_hi_val = self.get_register(dest_hi as u8) as i32 as i64;
+        let dest_lo_val = self.get_register(dest_lo as u8) as i32 as i64;
+        let dest_val: i64 = dest_hi_val << 32 | dest_lo_val;
+
+        let result: i64 = rm.wrapping_mul(rs).wrapping_add(dest_val);
+        let result_hi: u32 = (result >> 32) as u32; //upper 32 bits
+        let result_lo: u32 = (result & 0xFFFF_FFFF) as u32; //lower 32 bits
+
+        self.set_register(dest_hi as u8, result_hi);
+        self.set_register(dest_lo as u8, result_lo);
+        // if bit 20, set condition flags
+        if instruction.bit(20) {
+            let c: bool = self.psr[self.operating_mode].get_c();
+            let v: bool = self.psr[self.operating_mode].get_v();
+            self.psr[self.operating_mode].set_c(c);
+            self.psr[self.operating_mode].set_v(v);
+
+            let z: bool = result_hi == 0 && result_lo == 0;
+            let n: bool = (result_hi as u32).bit(31);
+            self.psr[self.operating_mode].set_z(z);
+            self.psr[self.operating_mode].set_n(n);
+        }
     }
 
-    /// Computes a multiplication between 2 32 bit unsigned integers and produces a 64 bit results<br>
+    #[allow(non_snake_case)]
+    /// Computes a multiplication between 2 32 bit unsigned integers and produces a 64 bit result<br>
     /// RdHi,RdLo = Rm * Rs where the lower 32 bits of the result are written into RdLo, while upper 32 bits into RdHi.<br>
     /// C and V flags are set to meaningless value.
     pub fn UMULL(&mut self, instruction: u32) {
         let dest_hi = instruction.bit_range(16..=19);
         let dest_lo = instruction.bit_range(12..=15);
 
-        let rm = self.get_register(instruction.bit_range(0..=3) as u8) as u64;
-        let rs = self.get_register(instruction.bit_range(8..=11) as u8) as u64;
+        let rm = self.get_register(instruction.bit_range(0..=3) as u8) as i32 as u64;
+        let rs = self.get_register(instruction.bit_range(8..=11) as u8) as i32 as u64;
         let result: u64 = rm.wrapping_mul(rs);
 
         let result_hi: u32 = (result >> 32) as u32; //upper 32 bits
@@ -568,8 +603,36 @@ impl<T: MemoryInterface + Default> CPU<T> {
     #[allow(non_snake_case)]
     /// Accumulator form of [Self::UMULL()]
     /// RdHi,RdLo = Rm * Rs + RdHi,RdLo. Lower 32 bits of the number to add are read from RdLo, upper 32 bits from RdHi
-    fn UMLAL(&mut self, instruction: u32) {
-        todo!();
+    pub fn UMLAL(&mut self, instruction: u32) {
+        let dest_hi = instruction.bit_range(16..=19);
+        let dest_lo = instruction.bit_range(12..=15);
+
+        let rm = self.get_register(instruction.bit_range(0..=3) as u8) as i32 as u64;
+        let rs = self.get_register(instruction.bit_range(8..=11) as u8) as i32 as u64;
+        //accumulate part
+        let dest_hi_val = self.get_register(dest_hi as u8) as i32 as u64;
+        let dest_lo_val = self.get_register(dest_lo as u8) as i32 as u64;
+        let dest_val: u64 = dest_hi_val << 32 | dest_lo_val;
+
+        let result: u64 = rm.wrapping_mul(rs).wrapping_add(dest_val);
+
+        let result_hi: u32 = (result >> 32) as u32; //upper 32 bits
+        let result_lo: u32 = (result & 0xFFFF_FFFF) as u32; //lower 32 bits
+
+        self.set_register(dest_hi as u8, result_hi);
+        self.set_register(dest_lo as u8, result_lo);
+        // if bit 20, set condition flags
+        if instruction.bit(20) {
+            let c: bool = self.psr[self.operating_mode].get_c();
+            let v: bool = self.psr[self.operating_mode].get_v();
+            self.psr[self.operating_mode].set_c(c);
+            self.psr[self.operating_mode].set_v(v);
+
+            let z: bool = result_hi == 0 && result_lo == 0;
+            let n: bool = (result_hi as u32).bit(31);
+            self.psr[self.operating_mode].set_z(z);
+            self.psr[self.operating_mode].set_n(n);
+        }
     }
 
     /// In a data-processing instruction, returns second operand.<br>

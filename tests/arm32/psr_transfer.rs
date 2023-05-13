@@ -31,10 +31,10 @@ fn read_write_psr() {
 #[test]
 fn write_flag_bits() {
     let mut cpu: CPU<Memory> = CPU::new();
-    cpu.psr[cpu.operating_mode].register = 0xF000_0000;
+    cpu.psr[cpu.operating_mode].register = 0x0000_0000;
 
     //msr cpsr_f, 0xF0000000 -> set flags to 1
-    cpu.execute_arm(cpu.decode(0xF0000000));
+    cpu.execute_arm(cpu.decode(0xE328_F20F));
 
     assert!(cpu.psr[cpu.operating_mode].get_c());
     assert!(cpu.psr[cpu.operating_mode].get_z());
