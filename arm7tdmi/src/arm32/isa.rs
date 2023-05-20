@@ -411,7 +411,6 @@ impl<T: MemoryInterface + Default> CPU<T> {
     }
 
     #[allow(non_snake_case)]
-    //TODO: Test thorougly
     /// Transfer (C/S)PSR contents to a specified register<br>
     /// If bit 22 is set, then content is transfered to a SPSR, otherwise just CPSR<br>
     /// When in User/Sys mode, SPSR is considered to be CPSR.
@@ -634,6 +633,62 @@ impl<T: MemoryInterface + Default> CPU<T> {
             self.psr[self.operating_mode].set_n(n);
         }
     }
+
+    /************************************************
+     *            LDR/STR                           *
+     ************************************************/
+
+    #[allow(non_snake_case)]
+    /// Load a byte(or a word) from a specified base register(plus/minus a possible shifted offset register).<br>
+    /// If specified, modified register can be written back to base register(W flag).<br>
+    /// Offset can be added before(pre-indexing) or after(post-indexing) the transfer.<br>
+    /// Post-indexing always writes back to base register, thus it's redundant setting W to 1(except for forcing non priviliged mode for transfer)
+    pub fn LDR(&mut self, instruction: u32) {
+        let base_register = instruction.bit_range(16..=19) as u8;
+        let base_register_val = self.get_register(base_register);
+        let dest_register = instruction.bit_range(12..=15) as u8;
+        //flags
+        let is_write_back = instruction.bit(21);
+        let is_byte_transfer = instruction.bit(22);
+        let is_add = instruction.bit(23);
+        let is_post = instruction.bit(24);
+        let is_immediate_reg = instruction.bit(25);
+
+        let offset = if is_immediate_reg {
+            self.get_shifted_op(instruction).0
+        } else {
+            instruction.bit_range(0..=12) as u32
+        };
+        //pre/post-indexing address calculation
+        let mut address = if is_add {
+            base_register_val + offset
+        } else {
+            base_register_val - offset
+        };
+        address = if !is_post { address } else { base_register_val };
+
+        let data = if is_byte_transfer {
+            self.memory.read_8(address) as u32
+        } else {
+            self.read_32_aligned(address)
+        };
+        if is_post || is_write_back {
+            self.set_register(base_register, base_register_val);
+        }
+        self.set_register(dest_register, data);
+    }
+    /// Reads a word(32 bit).<br>
+    /// If the address is misaligned(i.e., address not a multiple of 4), it gets &'d with !3 to force it to an
+    /// aligned address and then ROR data by (addr & 3)*8
+    fn read_32_aligned(&mut self, address: u32) -> u32 {
+        let data = self.memory.read_32(address & !3);
+        self.compute_shift_operation(data, ((address & 3) * 8) as u8, SHIFT::ROR, true)
+            .0
+    }
+
+    #[allow(non_snake_case)]
+    /// Store a byte(or a word)
+    pub fn STR(&mut self, instruction: u32) {}
 
     /// In a data-processing instruction, returns second operand.<br>
     /// Based on bit 21, it can be either an immediate value rotated by a certain amount(bit 21 set) or a shifter register(bit 21 clear)
