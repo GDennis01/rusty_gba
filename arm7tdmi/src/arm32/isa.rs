@@ -687,8 +687,46 @@ impl<T: MemoryInterface + Default> CPU<T> {
     }
 
     #[allow(non_snake_case)]
+    /// Store a byte(or a word) to a specified base register(plus/minus a possible shifted offset register).<br>
+    /// If specified, modified register can be written back to base register(W flag).<br>
+    /// Offset can be added before(pre-indexing) or after(post-indexing) the transfer.<br>
+    /// Post-indexing always writes back to base register, thus it's redundant setting W to 1(except for forcing non priviliged mode for transfer)
     /// Store a byte(or a word)
-    pub fn STR(&mut self, instruction: u32) {}
+    /// TODO:
+    pub fn STR(&mut self, instruction: u32) {
+        let base_register = instruction.bit_range(16..=19) as u8;
+        let base_register_val = self.get_register(base_register);
+        let dest_register = instruction.bit_range(12..=15) as u8;
+        let dest_register_val = self.get_register(dest_register);
+        //flags
+        let is_write_back = instruction.bit(21);
+        let is_byte_transfer = instruction.bit(22);
+        let is_add = instruction.bit(23);
+        let is_post = instruction.bit(24);
+        let is_immediate_reg = instruction.bit(25);
+
+        let offset = if is_immediate_reg {
+            self.get_shifted_op(instruction).0
+        } else {
+            instruction.bit_range(0..=12) as u32
+        };
+        //pre/post-indexing address calculation
+        let mut address = if is_add {
+            base_register_val + offset
+        } else {
+            base_register_val - offset
+        };
+        address = if !is_post { address } else { base_register_val };
+
+        if is_post || is_write_back {
+            self.set_register(base_register, base_register_val);
+        }
+        if is_byte_transfer {
+            self.memory.write_8(address, dest_register_val as u8);
+        } else {
+            self.memory.write_32(address, dest_register_val);
+        }
+    }
 
     /// In a data-processing instruction, returns second operand.<br>
     /// Based on bit 21, it can be either an immediate value rotated by a certain amount(bit 21 set) or a shifter register(bit 21 clear)

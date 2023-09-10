@@ -4,10 +4,10 @@ use arm7tdmi::cpu::MemoryInterface;
 pub struct Memory {
     //memory is byte addressable, not word addressable
     //general internal memory
-    pub bios: Box<[u8; 16 * 1024]>,    //16KBytes, 0 to 0x000_03FFF
-    board_wram: Box<[u8; 256 * 1024]>, //256KBytes, 0x0200_0000 to 0x0203_FFFF
-    chip_wram: Box<[u8; 32 * 1024]>,   //32KBytes, 0x0300_0000 to 0x0300_7FFF
-    io_registers: Box<[u8; 1023]>,     //1KByte, 0x0400_0000 to 0x0400_03FE
+    pub bios: Box<[u8; 16 * 1024]>,      //16KBytes, 0 to 0x000_03FFF
+    board_wram: Box<[u8; 256 * 1024]>,   //256KBytes, 0x0200_0000 to 0x0203_FFFF
+    pub chip_wram: Box<[u8; 32 * 1024]>, //32KBytes, 0x0300_0000 to 0x0300_7FFF
+    io_registers: Box<[u8; 1023]>,       //1KByte, 0x0400_0000 to 0x0400_03FE
     //internal display memory
     palette_ram: Box<[u8; 1024]>,    //1KByte, 0x0500_0000 to 0x0500_03FF
     video_ram: Box<[u8; 96 * 1024]>, //96KBytes, 0x0600_0000 to 0x0601_7FFF
@@ -68,17 +68,28 @@ impl MemoryInterface for Memory {
     }
     fn read_8(&self, address: u32) -> u8 {
         match address {
+            // 0x0000_0000..=0x000_03FFF => self.bios[address as usize],
+            // 0x0200_0000..=0x0203_FFFF => self.board_wram[(address - 0x3_FFFF) as usize],
+            // 0x0300_0000..=0x0300_7FFF => self.chip_wram[(address - 0x7FFF) as usize],
+            // 0x0400_0000..=0x0400_03FE => self.io_registers[(address - 0x3FE) as usize],
+            // 0x0500_0000..=0x0500_03FF => self.palette_ram[(address - 0x3FE) as usize],
+            // 0x0600_0000..=0x0601_7FFF => self.video_ram[(address - 0x1_7FFF) as usize],
+            // 0x0700_0000..=0x0700_03FF => self.obj_attributes[(address - 0x3FF) as usize],
+            // 0x0800_0000..=0x09FF_FFFF => self.gamepakrom1[(address - 0x1FF_FFFF) as usize],
+            // 0x0A00_0000..=0x0BFF_FFFF => self.gamepakrom2[(address - 0x1FF_FFFF) as usize],
+            // 0x0C00_0000..=0x0DFF_FFFF => self.gamepakrom3[(address - 0x1FF_FFFF) as usize],
+            // 0x0E00_0000..=0x0E00_FFFF => self.gamepaksram[(address - 0xFFFF) as usize],
             0x0000_0000..=0x000_03FFF => self.bios[address as usize],
-            0x0200_0000..=0x0203_FFFF => self.board_wram[(address - 0x3_FFFF) as usize],
-            0x0300_0000..=0x0300_7FFF => self.chip_wram[(address - 0x7FFF) as usize],
-            0x0400_0000..=0x0400_03FE => self.io_registers[(address - 0x3FE) as usize],
-            0x0500_0000..=0x0500_03FF => self.palette_ram[(address - 0x3FE) as usize],
-            0x0600_0000..=0x0601_7FFF => self.video_ram[(address - 0x1_7FFF) as usize],
-            0x0700_0000..=0x0700_03FF => self.obj_attributes[(address - 0x3FF) as usize],
-            0x0800_0000..=0x09FF_FFFF => self.gamepakrom1[(address - 0x1FF_FFFF) as usize],
-            0x0A00_0000..=0x0BFF_FFFF => self.gamepakrom2[(address - 0x1FF_FFFF) as usize],
-            0x0C00_0000..=0x0DFF_FFFF => self.gamepakrom3[(address - 0x1FF_FFFF) as usize],
-            0x0E00_0000..=0x0E00_FFFF => self.gamepaksram[(address - 0xFFFF) as usize],
+            0x0200_0000..=0x0203_FFFF => self.board_wram[(address - 0x0200_0000) as usize],
+            0x0300_0000..=0x0300_7FFF => self.chip_wram[(address - 0x0300_0000) as usize],
+            0x0400_0000..=0x0400_03FE => self.io_registers[(address - 0x0400_0000) as usize],
+            0x0500_0000..=0x0500_03FF => self.palette_ram[(address - 0x0500_0000) as usize],
+            0x0600_0000..=0x0601_7FFF => self.video_ram[(address - 0x0600_0000) as usize],
+            0x0700_0000..=0x0700_03FF => self.obj_attributes[(address - 0x0700_0000) as usize],
+            0x0800_0000..=0x09FF_FFFF => self.gamepakrom1[(address - 0x0800_0000) as usize],
+            0x0A00_0000..=0x0BFF_FFFF => self.gamepakrom2[(address - 0x0A00_0000) as usize],
+            0x0C00_0000..=0x0DFF_FFFF => self.gamepakrom3[(address - 0x0C00_0000) as usize],
+            0x0E00_0000..=0x0E00_FFFF => self.gamepaksram[(address - 0x0E00_0000) as usize],
             _ => panic!("Invalid address: {:#X}", address),
         }
     }
@@ -96,17 +107,30 @@ impl MemoryInterface for Memory {
     }
     fn write_8(&mut self, address: u32, data: u8) {
         match address {
+            // 0x0000_0000..=0x000_03FFF => self.bios[address as usize] = data,
+            // 0x0200_0000..=0x0203_FFFF => self.board_wram[(address - 0x3_FFFF) as usize] = data,
+            // 0x0300_0000..=0x0300_7FFF => self.chip_wram[(address - 0x7FFF) as usize] = data,
+            // 0x0400_0000..=0x0400_03FE => self.io_registers[(address - 0x3FE) as usize] = data,
+            // 0x0500_0000..=0x0500_03FF => self.palette_ram[(address - 0x3FE) as usize] = data,
+            // 0x0600_0000..=0x0601_7FFF => self.video_ram[(address - 0x1_7FFF) as usize] = data,
+            // 0x0700_0000..=0x0700_03FF => self.obj_attributes[(address - 0x3FF) as usize] = data,
+            // 0x0800_0000..=0x09FF_FFFF => self.gamepakrom1[(address - 0x1FF_FFFF) as usize] = data,
+            // 0x0A00_0000..=0x0BFF_FFFF => self.gamepakrom2[(address - 0x1FF_FFFF) as usize] = data,
+            // 0x0C00_0000..=0x0DFF_FFFF => self.gamepakrom3[(address - 0x1FF_FFFF) as usize] = data,
+            // 0x0E00_0000..=0x0E00_FFFF => self.gamepaksram[(address - 0xFFFF) as usize] = data,
             0x0000_0000..=0x000_03FFF => self.bios[address as usize] = data,
-            0x0200_0000..=0x0203_FFFF => self.board_wram[(address - 0x3_FFFF) as usize] = data,
-            0x0300_0000..=0x0300_7FFF => self.chip_wram[(address - 0x7FFF) as usize] = data,
-            0x0400_0000..=0x0400_03FE => self.io_registers[(address - 0x3FE) as usize] = data,
-            0x0500_0000..=0x0500_03FF => self.palette_ram[(address - 0x3FE) as usize] = data,
-            0x0600_0000..=0x0601_7FFF => self.video_ram[(address - 0x1_7FFF) as usize] = data,
-            0x0700_0000..=0x0700_03FF => self.obj_attributes[(address - 0x3FF) as usize] = data,
-            0x0800_0000..=0x09FF_FFFF => self.gamepakrom1[(address - 0x1FF_FFFF) as usize] = data,
-            0x0A00_0000..=0x0BFF_FFFF => self.gamepakrom2[(address - 0x1FF_FFFF) as usize] = data,
-            0x0C00_0000..=0x0DFF_FFFF => self.gamepakrom3[(address - 0x1FF_FFFF) as usize] = data,
-            0x0E00_0000..=0x0E00_FFFF => self.gamepaksram[(address - 0xFFFF) as usize] = data,
+            0x0200_0000..=0x0203_FFFF => self.board_wram[(address - 0200_0000) as usize] = data,
+            0x0300_0000..=0x0300_7FFF => self.chip_wram[(address - 0x0300_0000) as usize] = data,
+            0x0400_0000..=0x0400_03FE => self.io_registers[(address - 0x0400_0000) as usize] = data,
+            0x0500_0000..=0x0500_03FF => self.palette_ram[(address - 0x0500_0000) as usize] = data,
+            0x0600_0000..=0x0601_7FFF => self.video_ram[(address - 0x0600_0000) as usize] = data,
+            0x0700_0000..=0x0700_03FF => {
+                self.obj_attributes[(address - 0x0700_0000) as usize] = data
+            }
+            0x0800_0000..=0x09FF_FFFF => self.gamepakrom1[(address - 0x0800_0000) as usize] = data,
+            0x0A00_0000..=0x0BFF_FFFF => self.gamepakrom2[(address - 0x0A00_0000) as usize] = data,
+            0x0C00_0000..=0x0DFF_FFFF => self.gamepakrom3[(address - 0x0C00_0000) as usize] = data,
+            0x0E00_0000..=0x0E00_FFFF => self.gamepaksram[(address - 0x0E00_0000) as usize] = data,
             _ => panic!("Invalid address: {:#X}", address),
         }
     }
