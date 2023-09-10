@@ -589,11 +589,11 @@ fn umull_no_c_v_flag2() {
     assert!(!cpu.evaluate_cond(Condition::VC));
 }
 
-#[test]
-fn test() {
-    let a: u32 = (-1i32) as u32;
-    let b: u32 = (2) as u32;
-    println!("a{} b{}", (a as i32 as i64), (b as i64));
-    let res: u64 = (a as i64 as u64) * (b as i64 as u64);
-    println!("{}", (res as i64));
-}
+// #[test]
+// fn test() {
+//     let a: u32 = (-1i32) as u32;
+//     let b: u32 = (2) as u32;
+//     println!("a{} b{}", (a as i32 as i64), (b as i64));
+//     let res: u64 = (a as i64 as u64) * (b as i64 as u64);
+//     println!("{}", (res as i64));
+// }
