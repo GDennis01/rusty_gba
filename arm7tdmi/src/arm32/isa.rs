@@ -651,29 +651,30 @@ impl<T: MemoryInterface + Default> CPU<T> {
         let is_write_back = instruction.bit(21);
         let is_byte_transfer = instruction.bit(22);
         let is_add = instruction.bit(23);
-        let is_post = instruction.bit(24);
+        let is_post = !instruction.bit(24);
         let is_immediate_reg = instruction.bit(25);
 
         let offset = if is_immediate_reg {
             self.get_shifted_op(instruction).0
         } else {
-            instruction.bit_range(0..=12) as u32
+            instruction.bit_range(0..=11) as u32
         };
         //pre/post-indexing address calculation
-        let mut address = if is_add {
+        let address = if is_add {
             base_register_val + offset
         } else {
             base_register_val - offset
         };
-        address = if !is_post { address } else { base_register_val };
+        // if pre(!is_post), then the effective address is the address computed above, otherwhise is the base_register_val
+        let effective_address = if !is_post { address } else { base_register_val };
 
         let data = if is_byte_transfer {
-            self.memory.read_8(address) as u32
+            self.memory.read_8(effective_address) as u32
         } else {
-            self.read_32_aligned(address)
+            self.read_32_aligned(effective_address)
         };
         if is_post || is_write_back {
-            self.set_register(base_register, base_register_val);
+            self.set_register(base_register, address);
         }
         self.set_register(dest_register, data);
     }
@@ -702,29 +703,32 @@ impl<T: MemoryInterface + Default> CPU<T> {
         let is_write_back = instruction.bit(21);
         let is_byte_transfer = instruction.bit(22);
         let is_add = instruction.bit(23);
-        let is_post = instruction.bit(24);
+        let is_post = !instruction.bit(24);
         let is_immediate_reg = instruction.bit(25);
 
         let offset = if is_immediate_reg {
             self.get_shifted_op(instruction).0
         } else {
-            instruction.bit_range(0..=12) as u32
+            instruction.bit_range(0..=11) as u32
         };
         //pre/post-indexing address calculation
-        let mut address = if is_add {
+        let address = if is_add {
             base_register_val + offset
         } else {
             base_register_val - offset
         };
-        address = if !is_post { address } else { base_register_val };
+        // if pre(!is_post), then the effective address is the address computed above, otherwhise is the base_register_val
+        let effective_address = if !is_post { address } else { base_register_val };
+        // address = if !is_post { address } else { base_register_val };
 
-        if is_post || is_write_back {
-            self.set_register(base_register, base_register_val);
-        }
         if is_byte_transfer {
-            self.memory.write_8(address, dest_register_val as u8);
+            self.memory
+                .write_8(effective_address, dest_register_val as u8);
         } else {
-            self.memory.write_32(address, dest_register_val);
+            self.memory.write_32(effective_address, dest_register_val);
+        }
+        if is_post || is_write_back {
+            self.set_register(base_register, address);
         }
     }
 
