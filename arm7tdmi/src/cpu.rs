@@ -223,30 +223,35 @@ impl PSR {
 
     //Setters
     #[inline(always)]
+    /// Set N flag in the PSR
     pub fn set_n(&mut self, value: bool) {
         // self.register = self.register.bit_range(31..=31) | (value as u32) << 31;
         let data: u32 = if value { 0xFFFF_FFFF } else { 0 };
         self.register = self.register.set_bits(31..=31, data);
     }
     #[inline(always)]
+    /// Set Z flag in the PSR
     pub fn set_z(&mut self, value: bool) {
         let data: u32 = if value { 0xFFFF_FFFF } else { 0 };
         // self.register = self.register.bit_range(30..=30) | (value as u32) << 30;
         self.register = self.register.set_bits(30..=30, data);
     }
     #[inline(always)]
+    /// Set C flag in the PSR
     pub fn set_c(&mut self, value: bool) {
         // self.register = self.register.bit_range(29..=29) | (value as u32) << 29;
         let data: u32 = if value { 0xFFFF_FFFF } else { 0 };
         self.register = self.register.set_bits(29..=29, data);
     }
     #[inline(always)]
+    /// Set V flag in the PSR
     pub fn set_v(&mut self, value: bool) {
         // self.register = self.register.bit_range(28..=28) | (value as u32) << 28;
         let data: u32 = if value { 0xFFFF_FFFF } else { 0 };
         self.register = self.register.set_bits(28..=28, data);
     }
     #[inline(always)]
+    /// Set the T flag in the PSR
     pub fn set_t(&mut self, value: bool) {
         // self.register = self.register.bit_range(5..=5) | (value as u32) << 5;
         let data: u32 = if value { 0xFFFF_FFFF } else { 0 };
@@ -267,6 +272,8 @@ impl PSR {
         }
     }
 }
+/// To index [PSR;6], alas an array of 6 PSR element.
+/// This allows, e.g., to do psr[1] where psr is of type [PSR;6]
 impl Index<OperatingMode> for [PSR; 6] {
     type Output = PSR;
     fn index(&self, index: OperatingMode) -> &Self::Output {
@@ -280,6 +287,9 @@ impl Index<OperatingMode> for [PSR; 6] {
         }
     }
 }
+/// To index [PSR;6], alas an array of 6 PSR element.
+/// This allows, e.g., to do psr[1] where psr is of type [PSR;6]
+/// Used in a mutable context (e.g. psr[1]= bla bla)
 impl IndexMut<OperatingMode> for [PSR; 6] {
     fn index_mut(&mut self, index: OperatingMode) -> &mut Self::Output {
         match index {

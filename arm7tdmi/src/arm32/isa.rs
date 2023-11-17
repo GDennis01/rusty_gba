@@ -732,6 +732,10 @@ impl<T: MemoryInterface + Default> CPU<T> {
         }
     }
 
+    /*************************************************
+     *            Utility functions                  *
+     * TODO: maybe move them in another file?        *
+     ************************************************/
     /// In a data-processing instruction, returns second operand.<br>
     /// Based on bit 21, it can be either an immediate value rotated by a certain amount(bit 21 set) or a shifter register(bit 21 clear)
     fn get_op2(&mut self, instruction: u32) -> (u32, bool) {

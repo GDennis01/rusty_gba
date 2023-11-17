@@ -1,6 +1,7 @@
-// pub mod cpu;
-// pub mod gba;
 pub mod arm32;
+
+pub mod cpu;
+pub mod gba;
 use arm7tdmi::BitRange;
 #[cfg(test)]
 #[test]
