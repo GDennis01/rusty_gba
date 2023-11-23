@@ -21,7 +21,6 @@ fn set_bits2() {
 #[test]
 fn set_one_bit() {
     let mut data: u32 = 0x0;
-    let value: u32 = 0xFFFF_FFFF;
     data = data.set_bits(30..=30, 0xFFFF_FFFF);
     assert!(data.bit(30));
 }
