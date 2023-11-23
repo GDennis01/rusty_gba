@@ -1,3 +1,5 @@
+use core::panic;
+
 use crate::cpu::{MemoryInterface, OperatingMode, CPU};
 use crate::BitRange;
 #[derive(Debug)]
@@ -166,7 +168,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
         self.wrap_set_reg_condflags(
             result as u32,
             rd,
-            op2.1,
+            (op1 as u32) >= op2.0,
             is_overflow,
             false,
             instruction.bit(20),
@@ -187,7 +189,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
         self.wrap_set_reg_condflags(
             result as u32,
             rd,
-            op2.1,
+            op2.0 >= op1 as u32,
             is_overflow,
             false,
             instruction.bit(20),
@@ -204,10 +206,14 @@ impl<T: MemoryInterface + Default> CPU<T> {
             Some(_) => false,
             None => true,
         };
+        let is_c = match (op1 as u32).checked_add(op2.0) {
+            Some(_) => false,
+            None => true,
+        };
         self.wrap_set_reg_condflags(
             result as u32,
             rd,
-            op2.1,
+            is_c,
             is_overflow,
             false,
             instruction.bit(20),
@@ -224,10 +230,14 @@ impl<T: MemoryInterface + Default> CPU<T> {
             Some(_) => false,
             None => true,
         };
+        let is_c = match (op1 as u32).checked_add(op2.0) {
+            Some(_) => false,
+            None => true,
+        };
         self.wrap_set_reg_condflags(
             result as u32,
             rd,
-            op2.1,
+            is_c,
             is_overflow,
             false,
             instruction.bit(20),
@@ -239,8 +249,8 @@ impl<T: MemoryInterface + Default> CPU<T> {
         let rd: u8 = instruction.bit_range(12..=15) as u8;
         let op1 = self.get_op1(instruction) as i32;
         let op2 = self.get_op2(instruction);
-        let result =
-            op1.wrapping_sub(op2.0 as i32) + self.psr[self.operating_mode].get_c() as i32 - 1;
+        let op3: i32 = self.psr[self.operating_mode].get_c() as i32 - 1;
+        let result = op1.wrapping_sub(op2.0 as i32).wrapping_add(op3);
         let is_overflow = match op1.checked_sub(op2.0 as i32) {
             Some(_) => false,
             None => true,
@@ -248,7 +258,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
         self.wrap_set_reg_condflags(
             result as u32,
             rd,
-            op2.1,
+            op1 as u64 >= op2.0 as u64 + op3.abs() as u64,
             is_overflow,
             false,
             instruction.bit(20),
@@ -260,17 +270,17 @@ impl<T: MemoryInterface + Default> CPU<T> {
         let rd: u8 = instruction.bit_range(12..=15) as u8;
         let op1 = self.get_op1(instruction) as i32;
         let op2 = self.get_op2(instruction);
-
-        let result =
-            (op2.0 as i32).wrapping_sub(op1) + self.psr[self.operating_mode].get_c() as i32 - 1;
+        let op3: i32 = self.psr[self.operating_mode].get_c() as i32 - 1;
+        let result = (op2.0 as i32).wrapping_sub(op1).wrapping_add(op3);
         let is_overflow = match (op2.0 as i32).checked_sub(op1) {
             Some(_) => false,
             None => true,
         };
+        // panic!("{}", op3 as u64);
         self.wrap_set_reg_condflags(
             result as u32,
             rd,
-            op2.1,
+            op2.0 as u64 >= ((op1 as u64) + (op3.abs() as u64)),
             is_overflow,
             false,
             instruction.bit(20),
@@ -322,7 +332,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
         self.wrap_set_reg_condflags(
             result as u32,
             0,
-            op2.1,
+            (op1 as u32) >= op2.0,
             is_overflow,
             true,
             instruction.bit(20),
@@ -338,11 +348,14 @@ impl<T: MemoryInterface + Default> CPU<T> {
             Some(_) => false,
             None => true,
         };
-
+        let is_c = match (op1 as u32).checked_add(op2.0) {
+            Some(_) => false,
+            None => true,
+        };
         self.wrap_set_reg_condflags(
             result as u32,
             0,
-            op2.1,
+            is_c,
             is_overflow,
             true,
             instruction.bit(20),
