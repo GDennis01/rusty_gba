@@ -1,4 +1,5 @@
 use arm7tdmi::cpu::*;
+use arm7tdmi::BitRange;
 use gba::memory::Memory;
 /// Tests provided by https://github.com/jsmolka/gba-tests/blob/master/arm/single_transfer.asm and
 /// decoded,instruction by instruction, through https://shell-storm.org/online/Online-Assembler-and-Disassembler
@@ -150,4 +151,61 @@ fn misaligned_store() {
     // cmp     r1, r0
     cpu.execute_arm(cpu.decode(0xE151_0000));
     assert_eq!(cpu.get_register(1u8), cpu.get_register(0u8));
+}
+#[test]
+fn misaligned_load() {
+    let mut cpu: CPU<Memory> = CPU::new();
+    // mov     r0, 32
+    cpu.execute_arm(cpu.decode(0xE3A0_0020));
+    let r0 = cpu.get_register(0u8);
+    assert_eq!(r0, 32);
+
+    //   mov     r2, mem = 0x03000000
+    cpu.execute_arm(cpu.decode(0xE3A0_2403));
+    let r2 = cpu.get_register(2u8);
+    assert_eq!(r2, 0x0300_0000);
+
+    // str     r0, [r2]
+    cpu.execute_arm(cpu.decode(0xE582_0000));
+    let value = cpu.memory.read_32(r2);
+    assert_eq!(value, r0);
+
+    // ldr     r1, [r2, 3]
+    cpu.execute_arm(cpu.decode(0xE592_1003));
+    let r1 = cpu.get_register(1u8);
+    // computing  R0 ROR 24
+    let overshoot_bits = r0.bit_range(0..24) << (31 - (24 - 1));
+    let value = (r0 >> 24) | overshoot_bits;
+    assert_eq!(value, r1);
+    // cmp     r1, r0, ror 24
+    cpu.execute_arm(cpu.decode(0xE151_0C60));
+    assert!(cpu.psr[cpu.operating_mode].get_c());
+}
+#[test]
+fn store_pc() {
+    let mut cpu: CPU<Memory> = CPU::new();
+
+    //   mov     r2, mem = 0x03000000
+    cpu.execute_arm(cpu.decode(0xE3A0_2403));
+    let r2 = cpu.get_register(2u8);
+    assert_eq!(r2, 0x0300_0000);
+
+    //  str     pc, [r2]
+    cpu.execute_arm(cpu.decode(0xE582_F000));
+    let r15 = cpu.get_register(15u8);
+    let value = cpu.memory.read_32(r2);
+    assert_eq!(value, r15 + 8);
+
+    // mov     r0, pc
+    cpu.execute_arm(cpu.decode(0xE1A0_000F));
+    let r0 = cpu.get_register(0u8);
+
+    // ldr     r1, [r2]
+    cpu.execute_arm(cpu.decode(0xE592_1000));
+    let r1 = cpu.get_register(1u8);
+    assert_eq!(r1, r0);
+
+    // cmp     r1, r0
+    cpu.execute_arm(cpu.decode(0xE151_0000));
+    assert!(cpu.evaluate_cond(Condition::EQ));
 }

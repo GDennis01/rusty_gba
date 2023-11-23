@@ -711,13 +711,17 @@ impl<T: MemoryInterface + Default> CPU<T> {
     /// If specified, modified register can be written back to base register(W flag).<br>
     /// Offset can be added before(pre-indexing) or after(post-indexing) the transfer.<br>
     /// Post-indexing always writes back to base register, thus it's redundant setting W to 1(except for forcing non priviliged mode for transfer)
-    /// Store a byte(or a word)
+    /// Store a byte(or a word).<br>
+    /// In case of R15 as Rd, the value stored will be address of the instruction plus 12(or PC+8)
     /// TODO:
     pub fn STR(&mut self, instruction: u32) {
         let base_register = instruction.bit_range(16..=19) as u8;
         let base_register_val = self.get_register(base_register);
         let dest_register = instruction.bit_range(12..=15) as u8;
-        let dest_register_val = self.get_register(dest_register);
+        let mut dest_register_val = self.get_register(dest_register);
+        if dest_register == 15 {
+            dest_register_val += 8;
+        }
         //flags
         let is_write_back = instruction.bit(21);
         let is_byte_transfer = instruction.bit(22);
@@ -804,16 +808,16 @@ impl<T: MemoryInterface + Default> CPU<T> {
         let rm: u8 = instruction.bit_range(0..=3) as u8;
         let value: u32 = self.get_register(rm);
         let amount: u32;
-
+        //TODO: Capire se +4/+8 o +8/+12
         // if bit 4 is clear, then the shifted amount is an immediate value
         if !instruction.bit(4) {
             amount = instruction.bit_range(7..=11);
             if rm == 15 {
-                return (self.registers[15] + 8, false);
+                return (self.registers[15] + 4, false);
             }
         } else if instruction.bit(4) && !instruction.bit(7) {
             if rm == 15 {
-                return (self.registers[15] + 12, false);
+                return (self.registers[15] + 8, false);
             }
             //if bit 4 is set and bit 7 is clear,shifted amount is bottom byte of a register
             amount = self.get_register(instruction.bit_range(8..=11) as u8) & 0xFF;

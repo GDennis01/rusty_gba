@@ -140,6 +140,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
     //TODO: Using fx pointers?
     ///Execute an arm instruction based on its opcode
     pub fn execute_arm(&mut self, instruction: Instruction) {
+        self.registers[15] += 4;
         if !self.evaluate_cond(instruction.cond) {
             return;
         }
