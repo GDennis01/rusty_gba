@@ -699,7 +699,13 @@ impl<T: MemoryInterface + Default> CPU<T> {
         self.compute_shift_operation(data, ((address & 3) * 8) as u8, SHIFT::ROR, true)
             .0
     }
-
+    /// Writes a word(32 bit) to a word-aligned address.<br>
+    ///  /// If the address is misaligned(i.e., address not a multiple of 4), it gets &'d with !3 to force it to an
+    /// aligned address.
+    fn write_32_aligned(&mut self, address: u32, value: u32) {
+        let _new_address = address & !(3);
+        self.memory.write_32(_new_address, value);
+    }
     #[allow(non_snake_case)]
     /// Store a byte(or a word) to a specified base register(plus/minus a possible shifted offset register).<br>
     /// If specified, modified register can be written back to base register(W flag).<br>
@@ -738,7 +744,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
             self.memory
                 .write_8(effective_address, dest_register_val as u8);
         } else {
-            self.memory.write_32(effective_address, dest_register_val);
+            self.write_32_aligned(effective_address, dest_register_val);
         }
         if is_post || is_write_back {
             self.set_register(base_register, address);

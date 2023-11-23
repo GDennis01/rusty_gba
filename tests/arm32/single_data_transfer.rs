@@ -1,7 +1,7 @@
 use arm7tdmi::cpu::*;
 use gba::memory::Memory;
 /// Tests provided by https://github.com/jsmolka/gba-tests/blob/master/arm/single_transfer.asm and
-/// decoded,instruction by instruction, through https://shell-storm.org/online/Online-Assembler-and-Disassembler/?inst=cmp+r0%2C0x11&arch=arm&as_format=inline#assembly
+/// decoded,instruction by instruction, through https://shell-storm.org/online/Online-Assembler-and-Disassembler
 #[cfg(test)]
 #[test]
 fn load_store_word() {
@@ -122,4 +122,32 @@ fn index_writeback() {
     assert!(cpu.evaluate_cond(Condition::EQ));
     assert_eq!(cpu.get_register(2u8), 0x03000000)
     //   bne     f353
+}
+
+#[test]
+fn misaligned_store() {
+    let mut cpu: CPU<Memory> = CPU::new();
+
+    // mov     r0, 32
+    cpu.execute_arm(cpu.decode(0xE3A0_0020));
+    let r0 = cpu.get_register(0u8);
+    assert_eq!(r0, 32);
+
+    //   mov     r2, mem = 0x03000000
+    cpu.execute_arm(cpu.decode(0xE3A0_2403));
+    let r2 = cpu.get_register(2u8);
+    assert_eq!(r2, 0x0300_0000);
+
+    // str     r0, [r2, 3]
+    cpu.execute_arm(cpu.decode(0xE582_0003));
+    let read_value = cpu.memory.read_32(r2);
+    assert_eq!(read_value, 32);
+
+    // ldr     r1, [r2]
+    cpu.execute_arm(cpu.decode(0xE592_1000));
+    assert_eq!(cpu.get_register(1u8), cpu.get_register(0u8));
+
+    // cmp     r1, r0
+    cpu.execute_arm(cpu.decode(0xE151_0000));
+    assert_eq!(cpu.get_register(1u8), cpu.get_register(0u8));
 }
