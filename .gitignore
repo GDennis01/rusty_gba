@@ -3,3 +3,4 @@ gba_bios.bin
 /roms
 *.txt
 *.pdf
+.vscode/launch.json
