@@ -691,21 +691,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
         }
         self.set_register(dest_register, data);
     }
-    /// Reads a word(32 bit).<br>
-    /// If the address is misaligned(i.e., address not a multiple of 4), it gets &'d with !3 to force it to an
-    /// aligned address and then ROR data by (addr & 3)*8
-    fn read_32_aligned(&mut self, address: u32) -> u32 {
-        let data = self.memory.read_32(address & !3);
-        self.compute_shift_operation(data, ((address & 3) * 8) as u8, SHIFT::ROR, true)
-            .0
-    }
-    /// Writes a word(32 bit) to a word-aligned address.<br>
-    ///  /// If the address is misaligned(i.e., address not a multiple of 4), it gets &'d with !3 to force it to an
-    /// aligned address.
-    fn write_32_aligned(&mut self, address: u32, value: u32) {
-        let _new_address = address & !(3);
-        self.memory.write_32(_new_address, value);
-    }
+
     #[allow(non_snake_case)]
     /// Store a byte(or a word) to a specified base register(plus/minus a possible shifted offset register).<br>
     /// If specified, modified register can be written back to base register(W flag).<br>
@@ -755,6 +741,106 @@ impl<T: MemoryInterface + Default> CPU<T> {
         }
     }
 
+    /*************************************************
+     *      Halfword and Signed Data Transfer        *
+     *      TODO: making a single load/store function*
+     *      and then pass only the size of the data  *
+     ************************************************/
+    #[allow(non_snake_case)]
+    /// Load an unsigned halfword(16-bit) from a specified base register(plus/minus a possible shifted offset register).<br>
+    /// If specified, modified register can be written back to base register(W flag).<br>
+    /// Offset can be added before(pre-indexing) or after(post-indexing) the transfer.<br>
+    /// Post-indexing always writes back to base register, thus it's redundant setting W to 1(except for forcing non priviliged mode for transfer)
+    pub fn LDRH(&mut self, instruction: u32) {
+        let base_register = instruction.bit_range(16..=19) as u8;
+        let base_register_val = self.get_register(base_register);
+        let dest_register = instruction.bit_range(12..=15) as u8;
+        //flags
+        let is_write_back = instruction.bit(21);
+        let is_add = instruction.bit(23);
+        let is_post = !instruction.bit(24);
+
+        let lo_offset = instruction.bit_range(0..=3);
+        let hi_offset = instruction.bit_range(8..=11);
+        let offset = hi_offset << 4 | lo_offset;
+        //pre/post-indexing address calculation
+        let address = if is_add {
+            base_register_val + offset
+        } else {
+            base_register_val - offset
+        };
+        // if pre(!is_post), then the effective address is the address computed above, otherwhise is the base_register_val
+        let effective_address = if !is_post { address } else { base_register_val };
+
+        let data = self.read_16_aligned_unsigned(effective_address);
+
+        if is_post || is_write_back {
+            self.set_register(base_register, address);
+        }
+        self.set_register(dest_register, data as u32)
+    }
+    #[allow(non_snake_case)]
+    ///Like LDRH but the data is signed
+    pub fn LDRSH(&mut self, instruction: u32) {
+        let base_register = instruction.bit_range(16..=19) as u8;
+        let base_register_val = self.get_register(base_register);
+        let dest_register = instruction.bit_range(12..=15) as u8;
+        //flags
+        let is_write_back = instruction.bit(21);
+        let is_add = instruction.bit(23);
+        let is_post = !instruction.bit(24);
+
+        let lo_offset = instruction.bit_range(0..=3);
+        let hi_offset = instruction.bit_range(8..=11);
+        let offset = hi_offset << 4 | lo_offset;
+        //pre/post-indexing address calculation
+        let address = if is_add {
+            base_register_val + offset
+        } else {
+            base_register_val - offset
+        };
+        // if pre(!is_post), then the effective address is the address computed above, otherwhise is the base_register_val
+        let effective_address = if !is_post { address } else { base_register_val };
+
+        let data = self.read_16_aligned_signed(effective_address);
+
+        if is_post || is_write_back {
+            self.set_register(base_register, address);
+        }
+        self.set_register(dest_register, data as u32)
+    }
+
+    #[allow(non_snake_case)]
+    /// Like LDRH but the data is a signed byte
+    pub fn LDRSB(&mut self, instruction: u32) {
+        todo!()
+        // let base_register = instruction.bit_range(16..=19) as u8;
+        // let base_register_val = self.get_register(base_register);
+        // let dest_register = instruction.bit_range(12..=15) as u8;
+        // //flags
+        // let is_write_back = instruction.bit(21);
+        // let is_add = instruction.bit(23);
+        // let is_post = !instruction.bit(24);
+
+        // let lo_offset = instruction.bit_range(0..=3);
+        // let hi_offset = instruction.bit_range(8..=11);
+        // let offset = hi_offset << 4 | lo_offset;
+        // //pre/post-indexing address calculation
+        // let address = if is_add {
+        //     base_register_val + offset
+        // } else {
+        //     base_register_val - offset
+        // };
+        // // if pre(!is_post), then the effective address is the address computed above, otherwhise is the base_register_val
+        // let effective_address = if !is_post { address } else { base_register_val };
+
+        // let data = self.read_16_aligned_signed(effective_address);
+
+        // if is_post || is_write_back {
+        //     self.set_register(base_register, address);
+        // }
+        // self.set_register(dest_register, data as u32)
+    }
     /*************************************************
      *            Utility functions                  *
      * TODO: maybe move them in another file?        *
@@ -916,6 +1002,36 @@ impl<T: MemoryInterface + Default> CPU<T> {
             0b11 => SHIFT::ROR,
             _ => panic!("Error shift"),
         }
+    }
+
+    /// Reads a word(32 bit).<br>
+    /// If the address is misaligned(i.e., address not a multiple of 4), it gets &'d with !3 to force it to an
+    /// aligned address and then ROR data by (addr & 3)*8
+    fn read_32_aligned(&mut self, address: u32) -> u32 {
+        let data = self.memory.read_32(address & !3);
+        self.compute_shift_operation(data, ((address & 3) * 8) as u8, SHIFT::ROR, true)
+            .0
+    }
+    /// Reads a halfword(16-bit).<br>
+    /// If the address is misaligned(i.e., address not a multiple of 4), it gets &'d with !3 to force it to an
+    /// aligned address and then ROR data by (addr & 3)*8
+    fn read_16_aligned_unsigned(&mut self, address: u32) -> u16 {
+        let data = self.memory.read_16(address & !3);
+        self.compute_shift_operation(data as u32, ((address & 3) * 8) as u8, SHIFT::ROR, true)
+            .0 as u16
+    }
+
+    fn read_16_aligned_signed(&mut self, address: u32) -> i16 {
+        let data = self.memory.read_16(address & !3);
+        self.compute_shift_operation(data as u32, ((address & 3) * 8) as u8, SHIFT::ROR, true)
+            .0 as i16
+    }
+    /// Writes a word(32 bit) to a word-aligned address.<br>
+    ///  /// If the address is misaligned(i.e., address not a multiple of 4), it gets &'d with !3 to force it to an
+    /// aligned address.
+    fn write_32_aligned(&mut self, address: u32, value: u32) {
+        let _new_address = address & !(3);
+        self.memory.write_32(_new_address, value);
     }
 }
 
