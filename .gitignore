@@ -1,6 +1,7 @@
 /target
 gba_bios.bin
 /roms
+arm7tdmi/target
 *.txt
 *.pdf
 .vscode/launch.json
