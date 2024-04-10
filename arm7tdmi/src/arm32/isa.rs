@@ -643,7 +643,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
      ************************************************/
     /// Method that either perform a LDR or a STR operation.<br>
     /// - <strong>LDR</strong>:<br>
-    /// Load a byte(or a word) from a specified base register(plus/minus a possible shifted offset register).<br>
+    /// Load a unsigned byte(or a word) from a specified base register(plus/minus a possible shifted offset register).<br>
     /// If specified, modified register can be written back to base register(W flag).<br>
     /// Offset can be added before(pre-indexing) or after(post-indexing) the transfer.<br>
     /// Post-indexing always writes back to base register, thus it's redundant setting W to 1(except for forcing non priviliged mode for transfer)
@@ -713,7 +713,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
         }
     }
 
-    pub fn LDR(&mut self, instruction: u32) {
+    pub fn _LDR(&mut self, instruction: u32) {
         let base_register = instruction.bit_range(16..=19) as u8;
         let base_register_val = self.get_register(base_register);
         let dest_register = instruction.bit_range(12..=15) as u8;
@@ -749,7 +749,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
         self.set_register(dest_register, data);
     }
 
-    pub fn STR(&mut self, instruction: u32) {
+    pub fn _STR(&mut self, instruction: u32) {
         let base_register = instruction.bit_range(16..=19) as u8;
         let base_register_val = self.get_register(base_register);
         let dest_register = instruction.bit_range(12..=15) as u8;
@@ -796,11 +796,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
      *      and then pass only the size of the data  *
      ************************************************/
 
-    /// Load an unsigned halfword(16-bit) from a specified base register(plus/minus a possible shifted offset register).<br>
-    /// If specified, modified register can be written back to base register(W flag).<br>
-    /// Offset can be added before(pre-indexing) or after(post-indexing) the transfer.<br>
-    /// Post-indexing always writes back to base register, thus it's redundant setting W to 1(except for forcing non priviliged mode for transfer)
-    pub fn LDRH(&mut self, instruction: u32) {
+    pub fn _LDRH(&mut self, instruction: u32) {
         let base_register = instruction.bit_range(16..=19) as u8;
         let base_register_val = self.get_register(base_register);
         let dest_register = instruction.bit_range(12..=15) as u8;
@@ -830,7 +826,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
     }
 
     ///Like LDRH but the data is signed
-    pub fn LDRSH(&mut self, instruction: u32) {
+    pub fn _LDRSH(&mut self, instruction: u32) {
         let base_register = instruction.bit_range(16..=19) as u8;
         let base_register_val = self.get_register(base_register);
         let dest_register = instruction.bit_range(12..=15) as u8;
@@ -859,36 +855,57 @@ impl<T: MemoryInterface + Default> CPU<T> {
         self.set_register(dest_register, data as u32)
     }
 
-    /// Like LDRH but the data is a signed byte
-    pub fn LDRSB(&mut self, instruction: u32) {
+    pub fn _STRH(&mut self, instruction: u32) {
         todo!()
-        // let base_register = instruction.bit_range(16..=19) as u8;
-        // let base_register_val = self.get_register(base_register);
-        // let dest_register = instruction.bit_range(12..=15) as u8;
-        // //flags
-        // let is_write_back = instruction.bit(21);
-        // let is_add = instruction.bit(23);
-        // let is_post = !instruction.bit(24);
-
-        // let lo_offset = instruction.bit_range(0..=3);
-        // let hi_offset = instruction.bit_range(8..=11);
-        // let offset = hi_offset << 4 | lo_offset;
-        // //pre/post-indexing address calculation
-        // let address = if is_add {
-        //     base_register_val + offset
-        // } else {
-        //     base_register_val - offset
-        // };
-        // // if pre(!is_post), then the effective address is the address computed above, otherwhise is the base_register_val
-        // let effective_address = if !is_post { address } else { base_register_val };
-
-        // let data = self.read_16_aligned_signed(effective_address);
-
-        // if is_post || is_write_back {
-        //     self.set_register(base_register, address);
-        // }
-        // self.set_register(dest_register, data as u32)
     }
+    /// Load an signed/unsigned halfword(16-bit) or signed byte from a specified base register(plus/minus a possible shifted offset register).<br>
+    /// If specified, modified register can be written back to base register(W flag).<br>
+    /// Offset can be added before(pre-indexing) or after(post-indexing) the transfer.<br>
+    /// Post-indexing always writes back to base register, thus it's redundant setting W to 1(except for forcing non priviliged mode for transfer)
+    /// TODO: test this function and finish it with STRH
+    /// Maybe one big LDR_STR function that encompass both LDR_STR and LDR_STR_HALF?
+    pub fn LDR_STR_HALF(&mut self, instruction: u32, instr_type: OpcodeArm) {
+        let base_register = instruction.bit_range(16..=19) as u8;
+        let base_register_val = self.get_register(base_register);
+        let dest_register = instruction.bit_range(12..=15) as u8;
+        //flags
+        let is_write_back = instruction.bit(21);
+        let is_add = instruction.bit(23);
+        let is_post = !instruction.bit(24);
+
+        let lo_offset = instruction.bit_range(0..=3);
+        let hi_offset = instruction.bit_range(8..=11);
+        let offset = hi_offset << 4 | lo_offset;
+        //pre/post-indexing address calculation
+        let address = if is_add {
+            base_register_val + offset
+        } else {
+            base_register_val - offset
+        };
+        // if pre(!is_post), then the effective address is the address computed above, otherwhise is the base_register_val
+        let effective_address = if !is_post { address } else { base_register_val };
+        let data: u32;
+        match instr_type {
+            OpcodeArm::LDRSB => {
+                data = self.memory.read_8(effective_address) as u32;
+            }
+            OpcodeArm::LDRSH => {
+                data = self.read_16_aligned_signed(effective_address) as u32;
+            }
+            OpcodeArm::LDRH => {
+                data = self.read_16_aligned_unsigned(effective_address) as u32;
+            }
+            OpcodeArm::STRH => {
+                todo!()
+            }
+            _ => panic!("LDR_STR_HALF incompatible with {:?}", instr_type),
+        }
+        if is_post || is_write_back {
+            self.set_register(base_register, address);
+        }
+        self.set_register(dest_register, data as u32)
+    }
+
     /*************************************************
      *            Utility functions                  *
      * TODO: maybe move them in another file?        *
@@ -1073,6 +1090,13 @@ impl<T: MemoryInterface + Default> CPU<T> {
         let data = self.memory.read_16(address & !3);
         self.compute_shift_operation(data as u32, ((address & 3) * 8) as u8, SHIFT::ROR, true)
             .0 as i16
+    }
+
+    fn read_8_signed(&mut self, address: u32) -> i8 {
+        todo!();
+    }
+    fn read_8_unsigned(&mut self, address: u32) -> u8 {
+        todo!();
     }
     /// Writes a word(32 bit) to a word-aligned address.<br>
     ///  /// If the address is misaligned(i.e., address not a multiple of 4), it gets &'d with !3 to force it to an
