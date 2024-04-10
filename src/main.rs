@@ -1,6 +1,9 @@
 pub use arm7tdmi::cpu::MemoryInterface;
 pub use arm7tdmi::cpu::CPU;
 pub use gba::memory::Memory;
+use std::fmt::Display;
+use std::fmt::Formatter;
+use std::io::Write;
 use std::{fs, io::ErrorKind};
 
 pub fn main() {
@@ -14,14 +17,19 @@ pub fn main() {
     });
 
     //create a file to write in append using fs
-    // let mut file = fs::OpenOptions::new()
-    //     .write(true)
-    //     .append(true)
-    //     .open("log_arm.txt")
-    //     .unwrap();
+    let mut file = fs::OpenOptions::new()
+        .write(true)
+        .append(true)
+        .open("dump_txt/log_arm2.txt")
+        .unwrap();
     print!("Here");
     //create a new cpu
     let mut cpu: CPU<Memory> = CPU::new();
     cpu.memory.init_bios(_bios);
+    for instr in cpu.memory.bios.clone().chunks(4).into_iter() {
+        let instr_as_u32 = u32::from_le_bytes([instr[0], instr[1], instr[2], instr[3]]);
+        let instr_fmt = format!("{}\n", cpu.decode(instr_as_u32));
+        file.write_all(instr_fmt.as_bytes()).unwrap();
+    }
     // cpu.memory.dbg_dump();
 }

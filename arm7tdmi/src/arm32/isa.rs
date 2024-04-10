@@ -1,3 +1,4 @@
+#![allow(non_snake_case)]
 use core::panic;
 
 use crate::cpu::{MemoryInterface, OperatingMode, CPU};
@@ -51,12 +52,10 @@ impl<T: MemoryInterface + Default> CPU<T> {
      * BRANCH AND BRANCH EXCHANGE*
      *****************************/
 
-    #[allow(non_snake_case)]
     pub fn BX(&mut self, instruction: u32) {
         todo!()
     }
 
-    #[allow(non_snake_case)]
     /// Adds a signed 2 complement 24 bit offset(shitfted left by 2) to PC
     /// If Link bit is set, overwrites Link Register of current bank with PC
     /// Cycles: 2S + 1N
@@ -122,7 +121,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
             self.set_condition_flags(result as i32, is_overflow);
         }
     }
-    #[allow(non_snake_case)]
+
     /// Rd = Operand 1 AND Operand 2
     pub fn AND(&mut self, instruction: u32) {
         let rd: u8 = instruction.bit_range(12..=15) as u8;
@@ -138,7 +137,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
             instruction.bit(20),
         )
     }
-    #[allow(non_snake_case)]
+
     /// Rd = Operand 1 XOR Operand 2
     pub fn EOR(&mut self, instruction: u32) {
         let rd: u8 = instruction.bit_range(12..=15) as u8;
@@ -154,7 +153,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
             instruction.bit(20),
         );
     }
-    #[allow(non_snake_case)]
+
     /// Rd = Operand 1 - Operand 2
     pub fn SUB(&mut self, instruction: u32) {
         let rd: u8 = instruction.bit_range(12..=15) as u8;
@@ -175,7 +174,6 @@ impl<T: MemoryInterface + Default> CPU<T> {
         )
     }
 
-    #[allow(non_snake_case)]
     ///Reverse SUB, it swaps order of operand 1 and operand 2.
     pub fn RSB(&mut self, instruction: u32) {
         let rd: u8 = instruction.bit_range(12..=15) as u8;
@@ -195,7 +193,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
             instruction.bit(20),
         );
     }
-    #[allow(non_snake_case)]
+
     ///Rd = Operand 1 + Operand 2
     pub fn ADD(&mut self, instruction: u32) {
         let rd: u8 = instruction.bit_range(12..=15) as u8;
@@ -219,7 +217,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
             instruction.bit(20),
         );
     }
-    #[allow(non_snake_case)]
+
     ///Rd = Operand 1 + Operand 2 + C flag.
     pub fn ADC(&mut self, instruction: u32) {
         let rd: u8 = instruction.bit_range(12..=15) as u8;
@@ -243,7 +241,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
             instruction.bit(20),
         );
     }
-    #[allow(non_snake_case)]
+
     ///Rd = Operand 1 - Operand 2 + C flag - 1.
     pub fn SBC(&mut self, instruction: u32) {
         let rd: u8 = instruction.bit_range(12..=15) as u8;
@@ -264,7 +262,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
             instruction.bit(20),
         );
     }
-    #[allow(non_snake_case)]
+
     ///Rd = Operand 2 - Operand 1 + C flag - 1.
     pub fn RSC(&mut self, instruction: u32) {
         let rd: u8 = instruction.bit_range(12..=15) as u8;
@@ -286,7 +284,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
             instruction.bit(20),
         );
     }
-    #[allow(non_snake_case)]
+
     ///Set condition flags for Operand 1 AND Operand 2.
     pub fn TST(&mut self, instruction: u32) {
         let op1 = self.get_op1(instruction);
@@ -302,7 +300,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
             instruction.bit(20),
         );
     }
-    #[allow(non_snake_case)]
+
     ///Set condition flags for Operand 1 XOR Operand 2.
     pub fn TEQ(&mut self, instruction: u32) {
         let op1 = self.get_op1(instruction);
@@ -318,7 +316,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
             instruction.bit(20),
         );
     }
-    #[allow(non_snake_case)]
+
     ///Set condition flags for Operand 1 - Operand 2.
     pub fn CMP(&mut self, instruction: u32) {
         let op1 = self.get_op1(instruction) as i32;
@@ -338,7 +336,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
             instruction.bit(20),
         );
     }
-    #[allow(non_snake_case)]
+
     ///Set condition flags for Operand 1 + Operand 2.
     pub fn CMN(&mut self, instruction: u32) {
         let op1 = self.get_op1(instruction) as i32;
@@ -361,7 +359,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
             instruction.bit(20),
         );
     }
-    #[allow(non_snake_case)]
+
     /// Rd = Operand 1 OR Operand 2
     pub fn ORR(&mut self, instruction: u32) {
         let rd: u8 = instruction.bit_range(12..=15) as u8;
@@ -377,7 +375,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
             instruction.bit(20),
         );
     }
-    #[allow(non_snake_case)]
+
     /// Rd =  Operand 2
     pub fn MOV(&mut self, instruction: u32) {
         let rd: u8 = instruction.bit_range(12..=15) as u8;
@@ -392,7 +390,6 @@ impl<T: MemoryInterface + Default> CPU<T> {
         );
     }
 
-    #[allow(non_snake_case)]
     /// Rd = Operand 1 AND NOT Operand 2
     pub fn BIC(&mut self, instruction: u32) {
         let rd: u8 = instruction.bit_range(12..=15) as u8;
@@ -408,7 +405,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
             instruction.bit(20),
         );
     }
-    #[allow(non_snake_case)]
+
     /// Rd =  NOT Operand 2
     pub fn MVN(&mut self, instruction: u32) {
         let rd: u8 = instruction.bit_range(12..=15) as u8;
@@ -423,7 +420,6 @@ impl<T: MemoryInterface + Default> CPU<T> {
         );
     }
 
-    #[allow(non_snake_case)]
     /// Transfer (C/S)PSR contents to a specified register<br>
     /// If bit 22 is set, then content is transfered to a SPSR, otherwise just CPSR<br>
     /// When in User/Sys mode, SPSR is considered to be CPSR.
@@ -437,7 +433,6 @@ impl<T: MemoryInterface + Default> CPU<T> {
         self.set_register(instruction.bit_range(12..=15) as u8, psr_content);
     }
 
-    #[allow(non_snake_case)]
     /// Transfer register content, or immediate value, to (C/S)PSR<br>
     /// This allows to change condition flags as well as control bits(the latter only in privileged mode)<br>
     pub fn MSR(&mut self, instruction: u32) {
@@ -474,7 +469,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
     /************************************************
      *            Multiply and Multiply Long        *
      ************************************************/
-    #[allow(non_snake_case)]
+
     /// Computes Rd = Rm * Rs, Rn is ignored<br>
     /// Result is a 32 bit integer<br>
     /// C flag set to meaningless value and V flag unaffected
@@ -494,7 +489,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
             //random value, it couldve been true
         }
     }
-    #[allow(non_snake_case)]
+
     /// Accumulator form of [`Self::MUL()`] <br>
     /// Computes Rd = Rm * Rs + Rn
     pub fn MLA(&mut self, instruction: u32) {
@@ -514,7 +509,6 @@ impl<T: MemoryInterface + Default> CPU<T> {
         }
     }
 
-    #[allow(non_snake_case)]
     //SMULL and UMULL
     /// Computes a multiplication between 2 32 bit signed integers and produces a 64 bit results<br>
     /// RdHi,RdLo = Rm * Rs where the lower 32 bits of the result are written into RdLo, while upper 32 bits into RdHi.<br>
@@ -546,7 +540,6 @@ impl<T: MemoryInterface + Default> CPU<T> {
         }
     }
 
-    #[allow(non_snake_case)]
     /// Accumulator form of [Self::SMULL()]
     /// RdHi,RdLo = Rm * Rs + RdHi,RdLo. Lower 32 bits of the number to add are read from RdLo, upper 32 bits from RdHi
     pub fn SMLAL(&mut self, instruction: u32) {
@@ -581,7 +574,6 @@ impl<T: MemoryInterface + Default> CPU<T> {
         }
     }
 
-    #[allow(non_snake_case)]
     /// Computes a multiplication between 2 32 bit unsigned integers and produces a 64 bit result<br>
     /// RdHi,RdLo = Rm * Rs where the lower 32 bits of the result are written into RdLo, while upper 32 bits into RdHi.<br>
     /// C and V flags are set to meaningless value.
@@ -612,7 +604,6 @@ impl<T: MemoryInterface + Default> CPU<T> {
         }
     }
 
-    #[allow(non_snake_case)]
     /// Accumulator form of [Self::UMULL()]
     /// RdHi,RdLo = Rm * Rs + RdHi,RdLo. Lower 32 bits of the number to add are read from RdLo, upper 32 bits from RdHi
     pub fn UMLAL(&mut self, instruction: u32) {
@@ -650,12 +641,78 @@ impl<T: MemoryInterface + Default> CPU<T> {
     /************************************************
      *            LDR/STR                           *
      ************************************************/
-
-    #[allow(non_snake_case)]
+    /// Method that either perform a LDR or a STR operation.<br>
+    /// - <strong>LDR</strong>:<br>
     /// Load a byte(or a word) from a specified base register(plus/minus a possible shifted offset register).<br>
     /// If specified, modified register can be written back to base register(W flag).<br>
     /// Offset can be added before(pre-indexing) or after(post-indexing) the transfer.<br>
     /// Post-indexing always writes back to base register, thus it's redundant setting W to 1(except for forcing non priviliged mode for transfer)
+    /// - <strong>STR</strong>:<br>
+    /// Store a byte(or a word) to a specified base register(plus/minus a possible shifted offset register).<br>
+    /// If specified, modified register can be written back to base register(W flag).<br>
+    /// Offset can be added before(pre-indexing) or after(post-indexing) the transfer.<br>
+    /// Post-indexing always writes back to base register, thus it's redundant setting W to 1(except for forcing non priviliged mode for transfer)
+    /// Store a byte(or a word).<br>
+    /// In case of R15 as Rd, the value stored will be address of the instruction plus 12(or PC+8)
+    /// TODO: capire come decidere +12 o +8
+    pub fn LDR_STR(&mut self, instruction: u32, instr_type: OpcodeArm) {
+        let base_register = instruction.bit_range(16..=19) as u8;
+        let base_register_val = self.get_register(base_register);
+        let dest_register = instruction.bit_range(12..=15) as u8;
+        let mut dest_register_val = self.get_register(dest_register); // FOR STR ONLY
+
+        // FOR STR ONLY
+        if dest_register == 15 {
+            dest_register_val += 8;
+        }
+        //flags
+        let is_write_back = instruction.bit(21);
+        let is_byte_transfer = instruction.bit(22);
+        let is_add = instruction.bit(23);
+        let is_post = !instruction.bit(24);
+        let is_immediate_reg = instruction.bit(25);
+
+        //offset computation
+        let offset = if is_immediate_reg {
+            self.get_shifted_op(instruction).0
+        } else {
+            instruction.bit_range(0..=11) as u32
+        };
+        //pre/post-indexing address calculation
+        let address = if is_add {
+            base_register_val + offset
+        } else {
+            base_register_val - offset
+        };
+        // if pre(!is_post), then the effective address is the address computed above, otherwhise is the base_register_val
+        let effective_address = if !is_post { address } else { base_register_val };
+        match instr_type {
+            OpcodeArm::STR => {
+                if is_byte_transfer {
+                    self.memory
+                        .write_8(effective_address, dest_register_val as u8);
+                } else {
+                    self.write_32_aligned(effective_address, dest_register_val);
+                }
+                if is_post || is_write_back {
+                    self.set_register(base_register, address);
+                }
+            }
+            OpcodeArm::LDR => {
+                let data = if is_byte_transfer {
+                    self.memory.read_8(effective_address) as u32
+                } else {
+                    self.read_32_aligned(effective_address)
+                };
+                if is_post || is_write_back {
+                    self.set_register(base_register, address);
+                }
+                self.set_register(dest_register, data);
+            }
+            _ => panic!("LDR_STR incompatible with {:?}", instr_type),
+        }
+    }
+
     pub fn LDR(&mut self, instruction: u32) {
         let base_register = instruction.bit_range(16..=19) as u8;
         let base_register_val = self.get_register(base_register);
@@ -692,14 +749,6 @@ impl<T: MemoryInterface + Default> CPU<T> {
         self.set_register(dest_register, data);
     }
 
-    #[allow(non_snake_case)]
-    /// Store a byte(or a word) to a specified base register(plus/minus a possible shifted offset register).<br>
-    /// If specified, modified register can be written back to base register(W flag).<br>
-    /// Offset can be added before(pre-indexing) or after(post-indexing) the transfer.<br>
-    /// Post-indexing always writes back to base register, thus it's redundant setting W to 1(except for forcing non priviliged mode for transfer)
-    /// Store a byte(or a word).<br>
-    /// In case of R15 as Rd, the value stored will be address of the instruction plus 12(or PC+8)
-    /// TODO:
     pub fn STR(&mut self, instruction: u32) {
         let base_register = instruction.bit_range(16..=19) as u8;
         let base_register_val = self.get_register(base_register);
@@ -746,7 +795,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
      *      TODO: making a single load/store function*
      *      and then pass only the size of the data  *
      ************************************************/
-    #[allow(non_snake_case)]
+
     /// Load an unsigned halfword(16-bit) from a specified base register(plus/minus a possible shifted offset register).<br>
     /// If specified, modified register can be written back to base register(W flag).<br>
     /// Offset can be added before(pre-indexing) or after(post-indexing) the transfer.<br>
@@ -779,7 +828,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
         }
         self.set_register(dest_register, data as u32)
     }
-    #[allow(non_snake_case)]
+
     ///Like LDRH but the data is signed
     pub fn LDRSH(&mut self, instruction: u32) {
         let base_register = instruction.bit_range(16..=19) as u8;
@@ -810,7 +859,6 @@ impl<T: MemoryInterface + Default> CPU<T> {
         self.set_register(dest_register, data as u32)
     }
 
-    #[allow(non_snake_case)]
     /// Like LDRH but the data is a signed byte
     pub fn LDRSB(&mut self, instruction: u32) {
         todo!()
