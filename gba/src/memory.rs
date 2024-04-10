@@ -61,7 +61,6 @@ impl Default for Memory {
     }
 }
 //TODO: handle the case where youd read/write out of bounds for each memory region
-//TODO: bios and rom cannot be written
 impl MemoryInterface for Memory {
     fn new() -> Self {
         Memory::default()
@@ -127,10 +126,10 @@ impl MemoryInterface for Memory {
             0x0700_0000..=0x0700_03FF => {
                 self.obj_attributes[(address - 0x0700_0000) as usize] = data
             }
-            0x0800_0000..=0x09FF_FFFF => self.gamepakrom1[(address - 0x0800_0000) as usize] = data,
-            0x0A00_0000..=0x0BFF_FFFF => self.gamepakrom2[(address - 0x0A00_0000) as usize] = data,
-            0x0C00_0000..=0x0DFF_FFFF => self.gamepakrom3[(address - 0x0C00_0000) as usize] = data,
-            0x0E00_0000..=0x0E00_FFFF => self.gamepaksram[(address - 0x0E00_0000) as usize] = data,
+            // 0x0800_0000..=0x09FF_FFFF => self.gamepakrom1[(address - 0x0800_0000) as usize] = data,
+            // 0x0A00_0000..=0x0BFF_FFFF => self.gamepakrom2[(address - 0x0A00_0000) as usize] = data,
+            // 0x0C00_0000..=0x0DFF_FFFF => self.gamepakrom3[(address - 0x0C00_0000) as usize] = data,
+            // 0x0E00_0000..=0x0E00_FFFF => self.gamepaksram[(address - 0x0E00_0000) as usize] = data,
             _ => panic!("Invalid address: {:#X}", address),
         }
     }
