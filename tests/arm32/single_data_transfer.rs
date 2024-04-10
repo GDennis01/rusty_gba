@@ -213,7 +213,6 @@ fn store_pc() {
 #[test]
 #[should_panic]
 fn load_rrx_as_offset() {
-    //TODO:
     let mut cpu: CPU<Memory> = CPU::new();
     cpu.execute_arm(cpu.decode(0xE3A0_0000));
     let r0 = cpu.get_register(0u8);

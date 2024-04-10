@@ -8,7 +8,8 @@ pub mod thumb;
 // use std::ops::{BitOrAssign, RangeBounds};
 use core::ops::RangeBounds;
 
-///Simple trait that allows basic bit manipulation.<br>
+/// A library for simple bit manipulation.
+
 pub trait BitRange {
     ///Returns the bits in the specified range
     fn bit_range<R: RangeBounds<u8>>(&self, range: R) -> Self;
