@@ -1,6 +1,7 @@
 #![no_std]
 extern crate alloc;
 extern crate core;
+// TODO: make this an external library
 
 pub mod arm32;
 pub mod cpu;

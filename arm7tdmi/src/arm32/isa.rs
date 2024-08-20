@@ -654,7 +654,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
     /// Post-indexing always writes back to base register, thus it's redundant setting W to 1(except for forcing non priviliged mode for transfer)
     /// Store a byte(or a word).<br>
     /// In case of R15 as Rd, the value stored will be address of the instruction plus 12(or PC+8)
-    /// TODO: capire come decidere +12 o +8
+    // TODO: capire come decidere +12 o +8
     pub fn LDR_STR(&mut self, instruction: u32, instr_type: OpcodeArm) {
         let base_register = instruction.bit_range(16..=19) as u8;
         let base_register_val = self.get_register(base_register);

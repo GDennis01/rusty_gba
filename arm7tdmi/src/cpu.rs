@@ -205,22 +205,27 @@ impl PSR {
         PSR { register: 0 }
     }
     //Getters
+    /// Get N(negative) flag in the PSR
     #[inline(always)]
     pub fn get_n(&self) -> bool {
         self.register.bit(31)
     }
+    /// Get Z(zero) flag in the PSR
     #[inline(always)]
     pub fn get_z(&self) -> bool {
         self.register.bit(30)
     }
+    /// Get C(carry) flag in the PSR
     #[inline(always)]
     pub fn get_c(&self) -> bool {
         self.register.bit(29)
     }
+    /// Get V(overflow) flag in the PSR
     #[inline(always)]
     pub fn get_v(&self) -> bool {
         self.register.bit(28)
     }
+    /// Get T(thumb) flag in the PSR
     #[inline(always)]
     pub fn get_t(&self) -> bool {
         self.register.bit(5)
@@ -228,35 +233,35 @@ impl PSR {
 
     //Setters
     #[inline(always)]
-    /// Set N flag in the PSR
+    /// Set N(negative) flag in the PSR
     pub fn set_n(&mut self, value: bool) {
         // self.register = self.register.bit_range(31..=31) | (value as u32) << 31;
         let data: u32 = if value { 0xFFFF_FFFF } else { 0 };
         self.register = self.register.set_bits(31..=31, data);
     }
     #[inline(always)]
-    /// Set Z flag in the PSR
+    /// Set Z(zero) flag in the PSR
     pub fn set_z(&mut self, value: bool) {
         let data: u32 = if value { 0xFFFF_FFFF } else { 0 };
         // self.register = self.register.bit_range(30..=30) | (value as u32) << 30;
         self.register = self.register.set_bits(30..=30, data);
     }
     #[inline(always)]
-    /// Set C flag in the PSR
+    /// Set C(carry) flag in the PSR
     pub fn set_c(&mut self, value: bool) {
         // self.register = self.register.bit_range(29..=29) | (value as u32) << 29;
         let data: u32 = if value { 0xFFFF_FFFF } else { 0 };
         self.register = self.register.set_bits(29..=29, data);
     }
     #[inline(always)]
-    /// Set V flag in the PSR
+    /// Set V(overflow) flag in the PSR
     pub fn set_v(&mut self, value: bool) {
         // self.register = self.register.bit_range(28..=28) | (value as u32) << 28;
         let data: u32 = if value { 0xFFFF_FFFF } else { 0 };
         self.register = self.register.set_bits(28..=28, data);
     }
     #[inline(always)]
-    /// Set the T flag in the PSR
+    /// Set the T(thumb) flag in the PSR
     pub fn set_t(&mut self, value: bool) {
         // self.register = self.register.bit_range(5..=5) | (value as u32) << 5;
         let data: u32 = if value { 0xFFFF_FFFF } else { 0 };
@@ -311,12 +316,19 @@ impl IndexMut<OperatingMode> for [PSR; 6] {
 ///Each operating mode has its own copy of Program Status Register (PSR for short)
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum OperatingMode {
+    /// User mode: the default operating mode
     User = 0b10000,
+    /// FIQ mode: entered when a data transfer request occurs
     FIQ = 0b10001,
+    /// IRQ mode: entered when an interrupt request occurs
     IRQ = 0b10010,
+    /// Supervisor mode: protected mode for the operating system. Used for supervisor calls
     Supervisor = 0b10011,
+    /// Abort mode: entered when a data abort exception occurs
     Abort = 0b10111,
+    /// Undefined mode: entered when an undefined instruction is executed
     Undefined = 0b11011,
+    /// System mode: entered when the processor is in a privileged mode
     System = 0b11111,
 }
 
@@ -363,7 +375,9 @@ impl fmt::Display for Instruction {
 ///Enum that contains CPU operating modes: Arm(32 bit) or Thumb(16 bit)
 #[derive(Copy, Clone)]
 pub enum Mode {
+    /// 32-bit length instructions mode
     ARM,
+    /// 16-bit length instructions mode
     THUMB,
 }
 
