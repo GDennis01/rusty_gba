@@ -713,6 +713,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
         }
     }
 
+    //TODO: remove it when LDR_STR is fully tested
     pub fn _LDR(&mut self, instruction: u32) {
         let base_register = instruction.bit_range(16..=19) as u8;
         let base_register_val = self.get_register(base_register);
@@ -749,6 +750,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
         self.set_register(dest_register, data);
     }
 
+    //TODO: remove it when LDR_STR is fully tested
     pub fn _STR(&mut self, instruction: u32) {
         let base_register = instruction.bit_range(16..=19) as u8;
         let base_register_val = self.get_register(base_register);
@@ -795,7 +797,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
      *      TODO: making a single load/store function*
      *      and then pass only the size of the data  *
      ************************************************/
-
+    //TODO: remove it when LDR_STR is fully tested
     pub fn _LDRH(&mut self, instruction: u32) {
         let base_register = instruction.bit_range(16..=19) as u8;
         let base_register_val = self.get_register(base_register);
@@ -826,6 +828,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
     }
 
     ///Like LDRH but the data is signed
+    //TODO: remove it when LDR_STR is fully tested
     pub fn _LDRSH(&mut self, instruction: u32) {
         let base_register = instruction.bit_range(16..=19) as u8;
         let base_register_val = self.get_register(base_register);
@@ -855,6 +858,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
         self.set_register(dest_register, data as u32)
     }
 
+    //TODO: remove it when LDR_STR is fully tested
     pub fn _STRH(&mut self, instruction: u32) {
         todo!()
     }
@@ -888,22 +892,35 @@ impl<T: MemoryInterface + Default> CPU<T> {
         match instr_type {
             OpcodeArm::LDRSB => {
                 data = self.memory.read_8(effective_address) as u32;
+                if is_post || is_write_back {
+                    self.set_register(base_register, address);
+                }
+                self.set_register(dest_register, data as u32)
             }
             OpcodeArm::LDRSH => {
                 data = self.read_16_aligned_signed(effective_address) as u32;
+                if is_post || is_write_back {
+                    self.set_register(base_register, address);
+                }
+                self.set_register(dest_register, data as u32)
             }
             OpcodeArm::LDRH => {
                 data = self.read_16_aligned_unsigned(effective_address) as u32;
+                if is_post || is_write_back {
+                    self.set_register(base_register, address);
+                }
+                self.set_register(dest_register, data as u32)
             }
             OpcodeArm::STRH => {
-                todo!()
+                let value = self.get_register(dest_register);
+                self.write_16(effective_address, value as u16);
             }
             _ => panic!("LDR_STR_HALF incompatible with {:?}", instr_type),
         }
-        if is_post || is_write_back {
-            self.set_register(base_register, address);
-        }
-        self.set_register(dest_register, data as u32)
+        // if is_post || is_write_back {
+        //     self.set_register(base_register, address);
+        // }
+        // self.set_register(dest_register, data as u32)
     }
 
     /*************************************************
@@ -1022,7 +1039,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
                 if amount == 0 {
                     (0, value.bit(31))
                 } else {
-                    (value << amount, value.bit(amount - 1))
+                    (value >> amount, value.bit(amount - 1))
                 }
             }
             // Rust's >> is arithmetic if used with signed, thus I cast value as signed,
@@ -1098,6 +1115,12 @@ impl<T: MemoryInterface + Default> CPU<T> {
     fn read_8_unsigned(&mut self, address: u32) -> u8 {
         todo!();
     }
+
+    fn write_16(&mut self, address: u32, value: u16) {
+        let _new_address = address & !(3);
+        self.memory.write_16(address, value)
+    }
+
     /// Writes a word(32 bit) to a word-aligned address.<br>
     ///  /// If the address is misaligned(i.e., address not a multiple of 4), it gets &'d with !3 to force it to an
     /// aligned address.

@@ -179,7 +179,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
             // Opcode::Arm32(STRB) => self.STR(instruction.data),
             Opcode::Arm32(STR) => self.LDR_STR(instruction.data, OpcodeArm::STR),
             Opcode::Arm32(STRB) => self.LDR_STR(instruction.data, OpcodeArm::STR),
-            Opcode::Arm32(STRH) => todo!(),
+            Opcode::Arm32(STRH) => self.LDR_STR_HALF(instruction.data, OpcodeArm::STRH),
             Opcode::Arm32(SUB) => self.SUB(instruction.data),
             Opcode::Arm32(SWI) => todo!(),
             Opcode::Arm32(SWP) => todo!(),
