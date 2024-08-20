@@ -1,4 +1,4 @@
-# rusty_gba
+# rusty_gba(name subject to change)
 An attempt to emulate a GameBoy Advance.
 This is my Rust(and emudev as well) learning project
 
