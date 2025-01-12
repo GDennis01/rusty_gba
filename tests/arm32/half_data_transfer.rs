@@ -131,3 +131,68 @@ fn load_signed_halfword() {
     cpu.execute_arm(cpu.decode(0xE151_0000));
     assert!(cpu.psr[cpu.operating_mode].get_z());
 }
+
+#[test]
+fn load_unsigned_byte() {
+    let mut cpu: CPU<Memory> = CPU::new();
+
+    // mov     r2, 50331648 (mem)
+    cpu.execute_arm(cpu.decode(0xE3A02403));
+    let r2 = cpu.get_register(2u8);
+    assert_eq!(r2, 50331648);
+
+    // mov     r0, 0x7F
+    cpu.execute_arm(cpu.decode(0xE3A0_007F));
+    let r0 = cpu.get_register(0u8);
+    assert_eq!(r0, 0x7F);
+
+    // strb    r0, [r2]
+    cpu.execute_arm(cpu.decode(0xE5C2_0000));
+    // let value = cpu.memory.read_16(r2);
+    let value = cpu.memory.read_8(r2);
+    assert_eq!(value as u32, 0x7F);
+
+    // ldrsb r1,[r2]
+    cpu.execute_arm(cpu.decode(0xE1D2_10D0));
+    let r1 = cpu.get_register(1u8);
+    assert_eq!(r1, 0x7F);
+
+    // cmp     r1, r0
+    cpu.execute_arm(cpu.decode(0xE151_0000));
+    assert!(cpu.psr[cpu.operating_mode].get_z());
+}
+
+#[test]
+fn load_signed_byte() {
+    let mut cpu: CPU<Memory> = CPU::new();
+
+    // mov     r2, 50331648 (mem)
+    cpu.execute_arm(cpu.decode(0xE3A02403));
+    let r2 = cpu.get_register(2u8);
+    assert_eq!(r2, 50331648);
+
+    // mov     r0, 0xFF
+    cpu.execute_arm(cpu.decode(0xE3A0_00FF));
+    let r0 = cpu.get_register(0u8);
+    assert_eq!(r0, 0xFF);
+
+    // strb    r0, [r2]
+    cpu.execute_arm(cpu.decode(0xE5C2_0000));
+    // let value = cpu.memory.read_16(r2);
+    let value = cpu.memory.read_8(r2);
+    assert_eq!(value as u32, 0xFF);
+
+    // mvn     r0, 0
+    cpu.execute_arm(cpu.decode(0xE3E0_0000));
+    let r0 = cpu.get_register(0u8);
+    assert_eq!(r0, 0xFFFF_FFFF);
+
+    // ldrsb r1,[r2]
+    cpu.execute_arm(cpu.decode(0xE1D2_10D0));
+    let r1 = cpu.get_register(1u8);
+    assert_eq!(r1, 0xFFFF_FFFF);
+
+    // cmp     r1, r0
+    cpu.execute_arm(cpu.decode(0xE151_0000));
+    assert!(cpu.psr[cpu.operating_mode].get_z());
+}

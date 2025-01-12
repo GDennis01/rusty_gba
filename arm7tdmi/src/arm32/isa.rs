@@ -862,7 +862,8 @@ impl<T: MemoryInterface + Default> CPU<T> {
     pub fn _STRH(&mut self, instruction: u32) {
         todo!()
     }
-    /// Load an signed/unsigned halfword(16-bit) or signed byte from a specified base register(plus/minus a possible shifted offset register).<br>
+    /// Load an signed/unsigned extended halfword(16-bit) or signed extended byte from a specified base register(plus/minus a possible shifted offset register).<br>
+    /// Extendend: While loading an halfword, bits 0-15 of the dst register are copied, while remaining bits are copied from bit 15(Only for Signed Halfword, otherwise 0 is copied). Same thing for the byte version.
     /// If specified, modified register can be written back to base register(W flag).<br>
     /// Offset can be added before(pre-indexing) or after(post-indexing) the transfer.<br>
     /// Post-indexing always writes back to base register, thus it's redundant setting W to 1(except for forcing non priviliged mode for transfer)
@@ -888,10 +889,14 @@ impl<T: MemoryInterface + Default> CPU<T> {
         };
         // if pre(!is_post), then the effective address is the address computed above, otherwhise is the base_register_val
         let effective_address = if !is_post { address } else { base_register_val };
-        let data: u32;
+        let mut data: u32;
         match instr_type {
             OpcodeArm::LDRSB => {
                 data = self.memory.read_8(effective_address) as u32;
+                // LDRSB -> Extending the data with the bit sign. So if I have 0b1000_0000, it becomes 0b1111...1000_0000
+                if data.bit(7) {
+                    data = data | 0xFFFF_FF00;
+                }
                 if is_post || is_write_back {
                     self.set_register(base_register, address);
                 }
@@ -899,6 +904,10 @@ impl<T: MemoryInterface + Default> CPU<T> {
             }
             OpcodeArm::LDRSH => {
                 data = self.read_16_aligned_signed(effective_address) as u32;
+                // LDRSH -> Extending the data with the bit sign. So if I have 0b100_0000_0000_0000, it becomes 0b1111...1000_0000_0000_0000
+                if data.bit(15) {
+                    data = data | 0xFFFF_0000;
+                }
                 if is_post || is_write_back {
                     self.set_register(base_register, address);
                 }
