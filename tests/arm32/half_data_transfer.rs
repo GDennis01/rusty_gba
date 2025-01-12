@@ -196,3 +196,45 @@ fn load_signed_byte() {
     cpu.execute_arm(cpu.decode(0xE151_0000));
     assert!(cpu.psr[cpu.operating_mode].get_z());
 }
+
+#[test]
+fn ldr_str_indexing_wback_offset() {
+    let mut cpu: CPU<Memory> = CPU::new();
+
+    // mov     r2, 50331648 (mem)
+    cpu.execute_arm(cpu.decode(0xE3A02403));
+    let r2 = cpu.get_register(2u8);
+    assert_eq!(r2, 50331648);
+
+    // mov     r0, 32
+    cpu.execute_arm(cpu.decode(0xE3A0_0020));
+    let r0 = cpu.get_register(0u8);
+    assert_eq!(r0, 32);
+
+    // mov     r1, 4
+    cpu.execute_arm(cpu.decode(0xE3A0_1004));
+    let r1 = cpu.get_register(1u8);
+    assert_eq!(r1, 4);
+
+    // strh r0, [r2], 4
+    cpu.execute_arm(cpu.decode(0xE0C2_00B4));
+    let mut r2_updated = cpu.get_register(2u8);
+    let value = cpu.memory.read_16(r2);
+    assert_eq!(r2 + 4, r2_updated);
+    assert_eq!(value, r0 as u16);
+
+    // ldrh r3, [r2,-r1]!
+    cpu.execute_arm(cpu.decode(0xE132_30B1));
+    r2_updated = cpu.get_register(2u8);
+    let r3 = cpu.get_register(3u8);
+    assert_eq!(r2_updated, r2);
+    assert_eq!(r3, r0);
+
+    // cmp r3, r0
+    cpu.execute_arm(cpu.decode(0xE153_0000));
+    assert!(cpu.psr[cpu.operating_mode].get_z());
+
+    // cmp r2, 50331648
+    cpu.execute_arm(cpu.decode(0xE352_0403));
+    assert!(cpu.psr[cpu.operating_mode].get_z());
+}

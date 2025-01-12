@@ -878,9 +878,16 @@ impl<T: MemoryInterface + Default> CPU<T> {
         let is_add = instruction.bit(23);
         let is_post = !instruction.bit(24);
 
-        let lo_offset = instruction.bit_range(0..=3);
-        let hi_offset = instruction.bit_range(8..=11);
-        let offset = hi_offset << 4 | lo_offset;
+        let mut offset = 0u32;
+        // If bit 22 is set, then pre/post indexing is done by using an immediate value, otherwise a register is used
+        if instruction.bit(22) {
+            let lo_offset = instruction.bit_range(0..=3);
+            let hi_offset = instruction.bit_range(8..=11);
+            offset = hi_offset << 4 | lo_offset;
+        } else {
+            let offset_register = instruction.bit_range(0..=3);
+            offset = self.get_register(offset_register as u8)
+        }
         //pre/post-indexing address calculation
         let address = if is_add {
             base_register_val + offset
@@ -922,6 +929,9 @@ impl<T: MemoryInterface + Default> CPU<T> {
             }
             OpcodeArm::STRH => {
                 let value = self.get_register(dest_register);
+                if is_post || is_write_back {
+                    self.set_register(base_register, address);
+                }
                 self.write_16(effective_address, value as u16);
             }
             _ => panic!("LDR_STR_HALF incompatible with {:?}", instr_type),
