@@ -878,7 +878,9 @@ impl<T: MemoryInterface + Default> CPU<T> {
         let is_add = instruction.bit(23);
         let is_post = !instruction.bit(24);
 
-        let mut offset = 0u32;
+        let mut _instr_type = instr_type;
+
+        let offset;
         // If bit 22 is set, then pre/post indexing is done by using an immediate value, otherwise a register is used
         if instruction.bit(22) {
             let lo_offset = instruction.bit_range(0..=3);
@@ -895,9 +897,21 @@ impl<T: MemoryInterface + Default> CPU<T> {
             base_register_val - offset
         };
         // if pre(!is_post), then the effective address is the address computed above, otherwhise is the base_register_val
-        let effective_address = if !is_post { address } else { base_register_val };
+        let mut effective_address = if !is_post { address } else { base_register_val };
         let mut data: u32;
-        match instr_type {
+
+        // If LDRSH with Misaligned address, then LDRSH Rd, [odd_address] becomes a LDRSB Rd,[odd_address] with sign_expand byte value
+        // If LDRH with Misaligned address, then LDRSH Rd, [odd_address] becomes a LDRH Rd, [odd_address-1] ROR 8
+        // Source: https://problemkaputt.de/gbatek.htm#armcpumemoryalignments:~:text=On%20ARM7%20aka,expand%20BYTE%20value
+        let not_aligned = effective_address.bit(0);
+        if not_aligned {
+            if let OpcodeArm::LDRSH = _instr_type {
+                _instr_type = OpcodeArm::LDRSB
+            } else if let OpcodeArm::LDRH = _instr_type {
+                effective_address = effective_address - 1;
+            }
+        }
+        match _instr_type {
             OpcodeArm::LDRSB => {
                 data = self.memory.read_8(effective_address) as u32;
                 // LDRSB -> Extending the data with the bit sign. So if I have 0b1000_0000, it becomes 0b1111...1000_0000
@@ -911,6 +925,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
             }
             OpcodeArm::LDRSH => {
                 data = self.read_16_aligned_signed(effective_address) as u32;
+
                 // LDRSH -> Extending the data with the bit sign. So if I have 0b100_0000_0000_0000, it becomes 0b1111...1000_0000_0000_0000
                 if data.bit(15) {
                     data = data | 0xFFFF_0000;
@@ -922,9 +937,15 @@ impl<T: MemoryInterface + Default> CPU<T> {
             }
             OpcodeArm::LDRH => {
                 data = self.read_16_aligned_unsigned(effective_address) as u32;
+                if not_aligned {
+                    // TODO: is it really correct? mhh
+                    // Apply ROR #8 to data
+                    data = self.compute_shift_operation(data, 8, SHIFT::ROR, false).0;
+                }
                 if is_post || is_write_back {
                     self.set_register(base_register, address);
                 }
+
                 self.set_register(dest_register, data as u32)
             }
             OpcodeArm::STRH => {
@@ -932,9 +953,9 @@ impl<T: MemoryInterface + Default> CPU<T> {
                 if is_post || is_write_back {
                     self.set_register(base_register, address);
                 }
-                self.write_16(effective_address, value as u16);
+                self.write_16_aligned(effective_address, value as u16);
             }
-            _ => panic!("LDR_STR_HALF incompatible with {:?}", instr_type),
+            _ => panic!("LDR_STR_HALF incompatible with {:?}", _instr_type),
         }
         // if is_post || is_write_back {
         //     self.set_register(base_register, address);
@@ -1035,6 +1056,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
     /// * **value:** value to be shifted
     /// * **amount:** shift amount to apply on **value**
     /// * **shift:** shift type
+    /// * **immediate:** for ROR #0 shift operation
     fn compute_shift_operation(
         &mut self,
         value: u32,
@@ -1108,7 +1130,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
     /// Reads a word(32 bit).<br>
     /// If the address is misaligned(i.e., address not a multiple of 4), it gets &'d with !3 to force it to an
     /// aligned address and then ROR data by (addr & 3)*8
-    fn read_32_aligned(&mut self, address: u32) -> u32 {
+    pub fn read_32_aligned(&mut self, address: u32) -> u32 {
         let data = self.memory.read_32(address & !3);
         self.compute_shift_operation(data, ((address & 3) * 8) as u8, SHIFT::ROR, true)
             .0
@@ -1116,13 +1138,14 @@ impl<T: MemoryInterface + Default> CPU<T> {
     /// Reads a halfword(16-bit).<br>
     /// If the address is misaligned(i.e., address not a multiple of 4), it gets &'d with !3 to force it to an
     /// aligned address and then ROR data by (addr & 3)*8
-    fn read_16_aligned_unsigned(&mut self, address: u32) -> u16 {
+    /// Source: https://problemkaputt.de/gbatek.htm#armcpumemoryalignments
+    pub fn read_16_aligned_unsigned(&mut self, address: u32) -> u16 {
         let data = self.memory.read_16(address & !3);
         self.compute_shift_operation(data as u32, ((address & 3) * 8) as u8, SHIFT::ROR, true)
             .0 as u16
     }
 
-    fn read_16_aligned_signed(&mut self, address: u32) -> i16 {
+    pub fn read_16_aligned_signed(&mut self, address: u32) -> i16 {
         let data = self.memory.read_16(address & !3);
         self.compute_shift_operation(data as u32, ((address & 3) * 8) as u8, SHIFT::ROR, true)
             .0 as i16
@@ -1135,15 +1158,15 @@ impl<T: MemoryInterface + Default> CPU<T> {
         todo!();
     }
 
-    fn write_16(&mut self, address: u32, value: u16) {
+    pub fn write_16_aligned(&mut self, address: u32, value: u16) {
         let _new_address = address & !(3);
-        self.memory.write_16(address, value)
+        self.memory.write_16(_new_address, value)
     }
 
     /// Writes a word(32 bit) to a word-aligned address.<br>
     ///  /// If the address is misaligned(i.e., address not a multiple of 4), it gets &'d with !3 to force it to an
     /// aligned address.
-    fn write_32_aligned(&mut self, address: u32, value: u32) {
+    pub fn write_32_aligned(&mut self, address: u32, value: u32) {
         let _new_address = address & !(3);
         self.memory.write_32(_new_address, value);
     }

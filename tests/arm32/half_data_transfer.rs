@@ -1,4 +1,5 @@
 use arm7tdmi::cpu::*;
+use arm7tdmi::BitRange;
 use gba::memory::Memory;
 /// Tests provided by https://github.com/jsmolka/gba-tests/blob/master/arm/halfword_transfer.asm and
 /// decoded,instruction by instruction, through https://shell-storm.org/online/Online-Assembler-and-Disassembler
@@ -236,5 +237,67 @@ fn ldr_str_indexing_wback_offset() {
 
     // cmp r2, 50331648
     cpu.execute_arm(cpu.decode(0xE352_0403));
+    assert!(cpu.psr[cpu.operating_mode].get_z());
+}
+
+#[test]
+fn aligned_store_halfword() {
+    let mut cpu: CPU<Memory> = CPU::new();
+
+    // mov     r2, 50331648 (mem)
+    cpu.execute_arm(cpu.decode(0xE3A02403));
+    let r2 = cpu.get_register(2u8);
+    assert_eq!(r2, 50331648);
+
+    // mov     r0, 32
+    cpu.execute_arm(cpu.decode(0xE3A0_0020));
+    let r0 = cpu.get_register(0u8);
+    assert_eq!(r0, 32);
+
+    // strh r0, [r2,1]
+    cpu.execute_arm(cpu.decode(0xE1C2_00B1));
+    let value = cpu.read_16_aligned_unsigned(r2);
+    assert_eq!(value, r0 as u16);
+
+    // ldrh r1, [r2]
+    cpu.execute_arm(cpu.decode(0xE1D2_10B0));
+    let r1 = cpu.get_register(1u8);
+    assert_eq!(r1, r0);
+
+    // cmp r1, r0
+    cpu.execute_arm(cpu.decode(0xE151_0000));
+    assert!(cpu.psr[cpu.operating_mode].get_z());
+}
+
+#[test]
+fn misaligned_load_halfword_rotated() {
+    let mut cpu: CPU<Memory> = CPU::new();
+
+    // mov     r2, 50331648 (mem)
+    cpu.execute_arm(cpu.decode(0xE3A02403));
+    let r2 = cpu.get_register(2u8);
+    assert_eq!(r2, 50331648);
+
+    // mov     r0, 32
+    cpu.execute_arm(cpu.decode(0xE3A0_0020));
+    let r0 = cpu.get_register(0u8);
+    assert_eq!(r0, 32);
+
+    // strh r0, [r2]
+    cpu.execute_arm(cpu.decode(0xE1C2_00B0));
+    let value = cpu.memory.read_16(r2);
+    assert_eq!(value, r0 as u16);
+
+    // ldrh r1, [r2, 1]
+    cpu.execute_arm(cpu.decode(0xE1D2_10B1));
+    let r1 = cpu.get_register(1u8);
+
+    // computing  R0 ROR 8
+    let overshoot_bits = r0.bit_range(0..8) << (31 - (8 - 1));
+    let value = (r0 >> 8) | overshoot_bits;
+    assert_eq!(value, r1);
+
+    // cmp r1, r0, ror #8
+    cpu.execute_arm(cpu.decode(0xE151_0460));
     assert!(cpu.psr[cpu.operating_mode].get_z());
 }
