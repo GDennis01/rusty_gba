@@ -661,7 +661,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
         let dest_register = instruction.bit_range(12..=15) as u8;
         let mut dest_register_val = self.get_register(dest_register); // FOR STR ONLY
 
-        // FOR STR ONLY
+        // FOR STR ONLY (maybe it's +12??)
         if dest_register == 15 {
             dest_register_val += 8;
         }

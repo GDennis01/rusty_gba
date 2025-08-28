@@ -1,8 +1,13 @@
+use core::assert_eq;
+
 use arm7tdmi::cpu::*;
 use arm7tdmi::BitRange;
 use gba::memory::Memory;
 /// Tests provided by https://github.com/jsmolka/gba-tests/blob/master/arm/halfword_transfer.asm and
 /// decoded,instruction by instruction, through https://shell-storm.org/online/Online-Assembler-and-Disassembler
+///
+/// In the tests, "mem" is used as an alias to indicate r11 on which the MEM_IWRAM is moved onto
+/// Here, I use r2 instead and I move directly the MEM_IWRAM constant value (in decimal)
 
 #[cfg(test)]
 #[test]
@@ -300,4 +305,210 @@ fn misaligned_load_halfword_rotated() {
     // cmp r1, r0, ror #8
     cpu.execute_arm(cpu.decode(0xE151_0460));
     assert!(cpu.psr[cpu.operating_mode].get_z());
+}
+
+#[test]
+fn misaligned_load_signed_halfword() {
+    let mut cpu: CPU<Memory> = CPU::new();
+
+    // mov     r2, 50331648 (mem)
+    cpu.execute_arm(cpu.decode(0xE3A02403));
+    let r2 = cpu.get_register(2u8);
+    assert_eq!(r2, 50331648);
+
+    // mov     r0, 0xFF00
+    cpu.execute_arm(cpu.decode(0xE3A0_0CFF));
+    let r0 = cpu.get_register(0u8);
+    assert_eq!(r0, 0xFF00);
+
+    // strh r0, [r2]
+    cpu.execute_arm(cpu.decode(0xE1C2_00B0));
+    let value = cpu.memory.read_16(r2);
+    assert_eq!(value, r0 as u16);
+
+    // mvn     r0, 0
+    cpu.execute_arm(cpu.decode(0xE3E0_0000));
+    let r0 = cpu.get_register(0u8);
+    assert_eq!(r0, 4294967295);
+
+    // ldrsh r1, [r2,1]
+    cpu.execute_arm(cpu.decode(0xE1D2_10F1));
+    let r1 = cpu.get_register(1u8);
+    assert_eq!(r1, 4294967295);
+
+    // cmp r1, r0
+    cpu.execute_arm(cpu.decode(0xE151_0000));
+    assert!(cpu.psr[cpu.operating_mode].get_z());
+}
+
+#[test]
+// TODO: idk if this test is successful
+fn store_writeback_same_register() {
+    let mut cpu: CPU<Memory> = CPU::new();
+
+    // mov      r11, 50331648 (mem)    r11 since r2 will be used later
+    cpu.execute_arm(cpu.decode(0xE3A0_B403));
+    let r11 = cpu.get_register(11u8);
+    assert_eq!(r11, 50331648);
+
+    // mov      r0, r11
+    cpu.execute_arm(cpu.decode(0xE1A0_000B));
+    let mut r0 = cpu.get_register(0u8);
+    assert_eq!(r11, r0);
+
+    // strh r0, [r0, 4]!
+    cpu.execute_arm(cpu.decode(0xE1E0_00B4));
+    r0 = cpu.get_register(0u8);
+    assert_eq!(r0, 50331648 + 4);
+
+    // add r1, r11, 4
+    cpu.execute_arm(cpu.decode(0xE28B_1004));
+    let mut r1 = cpu.get_register(1u8);
+
+    // cmp r1, r0
+    cpu.execute_arm(cpu.decode(0xE151_0000));
+    assert!(cpu.psr[cpu.operating_mode].get_z());
+    assert_eq!(r1, r0);
+
+    // ldr     r1, [r0]
+    cpu.execute_arm(cpu.decode(0xE590_1000));
+    r1 = cpu.get_register(1u8);
+    assert_eq!(r1, cpu.memory.read_32(r0));
+
+    // mov      r2, r11
+    cpu.execute_arm(cpu.decode(0xE1A0_200B));
+    let mut r2 = cpu.get_register(2u8);
+    assert_eq!(r11, r2);
+
+    // bic r2, r2, 0xFF00_0000
+    cpu.execute_arm(cpu.decode(0xE3C2_24FF));
+
+    // bic     r2, r2, 0xFF0000
+    cpu.execute_arm(cpu.decode(0xE3C2_28FF));
+
+    // cmp r2, r1
+    cpu.execute_arm(cpu.decode(0xE152_0001));
+    assert!(cpu.psr[cpu.operating_mode].get_z());
+    r1 = cpu.get_register(1u8);
+    r2 = cpu.get_register(2u8);
+    assert_eq!(r1, r2);
+}
+
+#[test]
+// TODO: idk if this test is successful (prolly yes??)
+fn store_writeback_same_register2() {
+    let mut cpu: CPU<Memory> = CPU::new();
+
+    // mov      r11, 50331648 (mem)    r11 since r2 will be used later
+    cpu.execute_arm(cpu.decode(0xE3A0_B403));
+    let r11 = cpu.get_register(11u8);
+    assert_eq!(r11, 50331648);
+
+    // mov      r0, r11
+    cpu.execute_arm(cpu.decode(0xE1A0_000B));
+    let mut r0 = cpu.get_register(0u8);
+    assert_eq!(r11, r0);
+
+    // strh r0, [r0, 4]!
+    cpu.execute_arm(cpu.decode(0xE1E0_00B4));
+    r0 = cpu.get_register(0u8);
+    assert_eq!(r0, 50331648 + 4);
+
+    //sub r0,4
+    cpu.execute_arm(cpu.decode(0xE240_0004));
+    r0 = cpu.get_register(0 as u8);
+    assert_eq!(r0, 50331648); //r0 must be 32
+
+    // cmp r0, r11
+    cpu.execute_arm(cpu.decode(0xE150_000B));
+    assert!(cpu.psr[cpu.operating_mode].get_z());
+    assert_eq!(r0, r11);
+
+    // ldr     r1, [r0]
+    cpu.execute_arm(cpu.decode(0xE590_1000));
+    let mut r1 = cpu.get_register(1u8);
+    assert_eq!(r1, cpu.memory.read_32(r0));
+
+    // mov      r2, r11
+    cpu.execute_arm(cpu.decode(0xE1A0_200B));
+    let mut r2 = cpu.get_register(2u8);
+    assert_eq!(r11, r2);
+
+    // bic r2, r2, 0xFF00_0000
+    cpu.execute_arm(cpu.decode(0xE3C2_24FF));
+
+    // bic     r2, r2, 0xFF0000
+    cpu.execute_arm(cpu.decode(0xE3C2_28FF));
+
+    // cmp r2, r1
+    cpu.execute_arm(cpu.decode(0xE152_0001));
+    assert!(cpu.psr[cpu.operating_mode].get_z());
+    r1 = cpu.get_register(1u8);
+    r2 = cpu.get_register(2u8);
+    assert_eq!(r1, r2);
+}
+
+#[test]
+fn load_writeback_same_register() {
+    let mut cpu: CPU<Memory> = CPU::new();
+
+    // mov      r11, 50331648 (mem)    r11 since r2 will be used later
+    cpu.execute_arm(cpu.decode(0xE3A0_B403));
+    let r11 = cpu.get_register(11u8);
+    assert_eq!(r11, 50331648);
+
+    // mov      r0, r11
+    cpu.execute_arm(cpu.decode(0xE1A0_000B));
+    let mut r0 = cpu.get_register(0u8);
+    assert_eq!(r11, r0);
+
+    // mov      r1, 32
+    cpu.execute_arm(cpu.decode(0xE3A0_1020));
+    let r1 = cpu.get_register(1u8);
+    assert_eq!(r1, 32);
+
+    // str r1, [r0], #-4
+    cpu.execute_arm(cpu.decode(0xE400_1004));
+    let value = cpu.memory.read_32(r0);
+    assert_eq!(value, 32);
+
+    // ldrh r0, [r0,4]!
+    cpu.execute_arm(cpu.decode(0xE1F0_00B4));
+
+    //cmp r0,32
+    cpu.execute_arm(cpu.decode(0xE350_0020));
+    r0 = cpu.get_register(0u8);
+    assert_eq!(r0, 32);
+    assert!(cpu.psr[cpu.operating_mode].get_z()); //Z must be set to 1
+}
+#[test]
+fn load_writeback_same_register2() {
+    let mut cpu: CPU<Memory> = CPU::new();
+
+    // mov      r11, 50331648 (mem)    r11 since r2 will be used later
+    cpu.execute_arm(cpu.decode(0xE3A0_B403));
+    let r11 = cpu.get_register(11u8);
+    assert_eq!(r11, 50331648);
+
+    // mov      r0, r11
+    cpu.execute_arm(cpu.decode(0xE1A0_000B));
+    let mut r0 = cpu.get_register(0u8);
+    assert_eq!(r11, r0);
+
+    // mov      r1, 32
+    cpu.execute_arm(cpu.decode(0xE3A0_1020));
+    let r1 = cpu.get_register(1u8);
+    assert_eq!(r1, 32);
+
+    // strh r1, [r0]
+    cpu.execute_arm(cpu.decode(0xE1C0_10B0));
+
+    // ldrh r0, [r0], 4
+    cpu.execute_arm(cpu.decode(0xE0D000B4));
+
+    //cmp r0,32
+    cpu.execute_arm(cpu.decode(0xE350_0020));
+    r0 = cpu.get_register(0u8);
+    assert_eq!(r0, 32);
+    assert!(cpu.psr[cpu.operating_mode].get_z()); //Z must be set to 1
 }

@@ -1,8 +1,8 @@
 pub use arm7tdmi::cpu::MemoryInterface;
 pub use arm7tdmi::cpu::CPU;
 pub use gba::memory::Memory;
-use std::fmt::Display;
-use std::fmt::Formatter;
+// use std::fmt::Display;
+// use std::fmt::Formatter;
 use std::io::Write;
 use std::{fs, io::ErrorKind};
 
@@ -10,7 +10,7 @@ pub fn main() {
     println!("Hello, worlds!");
     let _bios = fs::read("gba_bios.bin").unwrap_or_else(|error| {
         if error.kind() == ErrorKind::NotFound {
-            panic!("Not found");
+            panic!("GBA Bios Not found");
         } else {
             panic!("IDK");
         }
@@ -18,6 +18,7 @@ pub fn main() {
 
     //create a file to write in append using fs
     let mut file = fs::OpenOptions::new()
+        .create_new(true)
         .write(true)
         .append(true)
         .open("dump_txt/log_arm2.txt")

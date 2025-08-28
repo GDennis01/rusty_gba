@@ -3,6 +3,9 @@ use arm7tdmi::BitRange;
 use gba::memory::Memory;
 /// Tests provided by https://github.com/jsmolka/gba-tests/blob/master/arm/single_transfer.asm and
 /// decoded,instruction by instruction, through https://shell-storm.org/online/Online-Assembler-and-Disassembler
+///
+/// In the tests, "mem" is used as an alias to indicate r11 on which the MEM_IWRAM is moved onto
+/// Here, I use r2 instead and I move directly the MEM_IWRAM constant value (in decimal)
 #[cfg(test)]
 #[test]
 fn load_store_word() {
@@ -90,7 +93,7 @@ fn index_writeback() {
     let mut cpu: CPU<Memory> = CPU::new();
     //   mov     r0, 32
     cpu.execute_arm(cpu.decode(0xE3A0_0020));
-    let r0 = cpu.get_register(0u8);
+    let mut r0 = cpu.get_register(0u8);
     assert_eq!(r0, 32);
 
     //   mov     r1, 1
@@ -106,6 +109,7 @@ fn index_writeback() {
     //   str     r0, [r2], 4
     cpu.execute_arm(cpu.decode(0xE482_0004));
     let read_value = cpu.memory.read_32(r2);
+
     assert_eq!(read_value, 32);
 
     //   ldr     r3, [r2, -r1, lsl 2]!
