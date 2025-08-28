@@ -7,6 +7,7 @@ pub mod arm32;
 pub mod cpu;
 pub mod thumb;
 // use std::ops::{BitOrAssign, RangeBounds};
+use alloc::vec::Vec;
 use core::ops::RangeBounds;
 
 /// A library for simple bit manipulation.
@@ -75,5 +76,39 @@ impl BitRange for u32 {
         // println!("RES   :{:#034b}", res);
 
         res
+    }
+}
+pub trait ToBitVec {
+    fn to_bitvec(&self) -> Vec<bool>;
+}
+impl ToBitVec for u32 {
+    fn to_bitvec(&self) -> Vec<bool> {
+        let mut bitvec: Vec<bool> = Vec::new();
+        for i in 0..32 {
+            bitvec.push(self.bit(i as u8));
+        }
+        bitvec
+    }
+}
+
+impl ToBitVec for u16 {
+    fn to_bitvec(&self) -> Vec<bool> {
+        let mut bitvec: Vec<bool> = Vec::new();
+        for i in 0..16 {
+            let tmp = *self as u32;
+            bitvec.push(tmp.bit(i as u8));
+        }
+        bitvec
+    }
+}
+
+impl ToBitVec for u8 {
+    fn to_bitvec(&self) -> Vec<bool> {
+        let mut bitvec: Vec<bool> = Vec::new();
+        for i in 0..8 {
+            let tmp = *self as u32;
+            bitvec.push(tmp.bit(i as u8));
+        }
+        bitvec
     }
 }

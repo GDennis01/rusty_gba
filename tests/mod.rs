@@ -3,6 +3,7 @@ pub mod arm32;
 // pub mod cpu;
 pub mod gba;
 use arm7tdmi::BitRange;
+use arm7tdmi::ToBitVec;
 #[cfg(test)]
 #[test]
 fn set_bits() {
@@ -77,4 +78,112 @@ fn bit_range3() {
     let value: u32 = 0x9ABE_DEFC;
 
     assert_eq!(value.bit_range(31..), 0b1)
+}
+
+#[test]
+fn bitvec_u8() {
+    let a: u8 = 0b1010_0110;
+    let bv: Vec<bool> = a.to_bitvec();
+    assert_eq!(
+        bv,
+        Vec::from([false, true, true, false, false, true, false, true])
+    );
+}
+#[test]
+fn bitvec_u8_allzero() {
+    let a: u8 = 0b0000_0000;
+    let bv: Vec<bool> = a.to_bitvec();
+    assert_eq!(
+        bv,
+        Vec::from([false, false, false, false, false, false, false, false])
+    );
+}
+
+#[test]
+fn bitvec_u8_allone() {
+    let a: u8 = 0b1111_1111;
+    let bv: Vec<bool> = a.to_bitvec();
+    assert_eq!(
+        bv,
+        Vec::from([true, true, true, true, true, true, true, true])
+    );
+}
+
+#[test]
+fn bitvec_u16() {
+    let a: u16 = 0b1010_0110_1010_0110;
+    let bv: Vec<bool> = a.to_bitvec();
+    assert_eq!(
+        bv,
+        Vec::from([
+            false, true, true, false, false, true, false, true, false, true, true, false, false,
+            true, false, true
+        ])
+    );
+}
+
+#[test]
+fn bitvec_u16_allzero() {
+    let a: u16 = 0b0000_0000_0000_0000;
+    let bv: Vec<bool> = a.to_bitvec();
+    assert_eq!(
+        bv,
+        Vec::from([
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false
+        ])
+    );
+}
+
+#[test]
+fn bitvec_u16_allone() {
+    let a: u16 = 0b1111_1111_1111_1111;
+    let bv: Vec<bool> = a.to_bitvec();
+    assert_eq!(
+        bv,
+        Vec::from([
+            true, true, true, true, true, true, true, true, true, true, true, true, true, true,
+            true, true
+        ])
+    );
+}
+
+#[test]
+fn bitvec_u32() {
+    let a: u32 = 0b1010_0110_1010_0110_1010_0110_1010_0110;
+    let bv: Vec<bool> = a.to_bitvec();
+    assert_eq!(
+        bv,
+        Vec::from([
+            false, true, true, false, false, true, false, true, false, true, true, false, false,
+            true, false, true, false, true, true, false, false, true, false, true, false, true,
+            true, false, false, true, false, true,
+        ])
+    );
+}
+#[test]
+fn bitvec_u32_allzero() {
+    let a: u32 = 0b0000_0000_0000_0000_0000_0000_0000_0000;
+    let bv: Vec<bool> = a.to_bitvec();
+    assert_eq!(
+        bv,
+        Vec::from([
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false
+        ])
+    );
+}
+#[test]
+fn bitvec_u32_allone() {
+    let a: u32 = 0b1111_1111_1111_1111_1111_1111_1111_1111;
+    let bv: Vec<bool> = a.to_bitvec();
+    assert_eq!(
+        bv,
+        Vec::from([
+            true, true, true, true, true, true, true, true, true, true, true, true, true, true,
+            true, true, true, true, true, true, true, true, true, true, true, true, true, true,
+            true, true, true, true
+        ])
+    );
 }
