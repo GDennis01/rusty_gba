@@ -259,7 +259,7 @@ fn aligned_store_halfword() {
 
     // strh r0, [r2,1]
     cpu.execute_arm(cpu.decode(0xE1C2_00B1));
-    let value = cpu.read_16_aligned_unsigned(r2);
+    let value = cpu.read_16_aligned_unsigned(r2, false);
     assert_eq!(value, r0 as u16);
 
     // ldrh r1, [r2]

@@ -705,7 +705,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
                 let data = if is_byte_transfer {
                     self.memory.read_8(effective_address) as u32
                 } else {
-                    self.read_32_aligned(effective_address)
+                    self.read_32_aligned(effective_address, true)
                 };
                 if is_post || is_write_back {
                     self.set_register(base_register, address);
@@ -745,7 +745,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
         let data = if is_byte_transfer {
             self.memory.read_8(effective_address) as u32
         } else {
-            self.read_32_aligned(effective_address)
+            self.read_32_aligned(effective_address, true)
         };
         if is_post || is_write_back {
             self.set_register(base_register, address);
@@ -822,7 +822,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
         // if pre(!is_post), then the effective address is the address computed above, otherwhise is the base_register_val
         let effective_address = if !is_post { address } else { base_register_val };
 
-        let data = self.read_16_aligned_unsigned(effective_address);
+        let data = self.read_16_aligned_unsigned(effective_address, true);
 
         if is_post || is_write_back {
             self.set_register(base_register, address);
@@ -853,7 +853,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
         // if pre(!is_post), then the effective address is the address computed above, otherwhise is the base_register_val
         let effective_address = if !is_post { address } else { base_register_val };
 
-        let data = self.read_16_aligned_signed(effective_address);
+        let data = self.read_16_aligned_signed(effective_address, true);
 
         if is_post || is_write_back {
             self.set_register(base_register, address);
@@ -927,7 +927,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
                 self.set_register(dest_register, data as u32)
             }
             OpcodeArm::LDRSH => {
-                data = self.read_16_aligned_signed(effective_address) as u32;
+                data = self.read_16_aligned_signed(effective_address, true) as u32;
 
                 // LDRSH -> Extending the data with the bit sign. So if I have 0b100_0000_0000_0000, it becomes 0b1111...1000_0000_0000_0000
                 if data.bit(15) {
@@ -939,7 +939,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
                 self.set_register(dest_register, data as u32)
             }
             OpcodeArm::LDRH => {
-                data = self.read_16_aligned_unsigned(effective_address) as u32;
+                data = self.read_16_aligned_unsigned(effective_address, true) as u32;
                 if not_aligned {
                     // TODO: is it really correct? mhh
                     // Apply ROR #8 to data
@@ -993,7 +993,9 @@ impl<T: MemoryInterface + Default> CPU<T> {
         let is_add: bool = instruction.bit(23);
         let mut is_post: bool = !instruction.bit(24);
 
+        // let base_address = self.get_register(base_register as u8) & !3; // align the address
         let base_address = self.get_register(base_register as u8);
+
         let mut address = base_address;
 
         // If rlist is empty (rlist=0), then r15 is loaded/stored and Rb=Rb+/-40h (??)
@@ -1032,10 +1034,10 @@ impl<T: MemoryInterface + Default> CPU<T> {
             let r_i = self.get_register(i as u8);
             if is_post {
                 if is_load {
-                    let _val = self.memory.read_32(address);
-                    self.set_register(i as u8, self.memory.read_32(address));
+                    let _val = self.read_32_aligned(address, false);
+                    self.set_register(i as u8, _val);
                 } else {
-                    self.memory.write_32(address, r_i);
+                    self.write_32_aligned(address, r_i);
                 }
                 // address = if is_add { address + 4 } else { address - 4 }; // Increment After and Decrement After
                 address += 4;
@@ -1043,9 +1045,10 @@ impl<T: MemoryInterface + Default> CPU<T> {
                 // address = if is_add { address + 4 } else { address - 4 }; // Increment Before and Decrement Before
                 address += 4;
                 if is_load {
-                    self.set_register(i as u8, self.memory.read_32(address));
+                    let _val = self.read_32_aligned(address, false);
+                    self.set_register(i as u8, _val);
                 } else {
-                    self.memory.write_32(address, r_i);
+                    self.write_32_aligned(address, r_i);
                 }
             }
         }
@@ -1234,25 +1237,37 @@ impl<T: MemoryInterface + Default> CPU<T> {
     /// Reads a word(32 bit).<br>
     /// If the address is misaligned(i.e., address not a multiple of 4), it gets &'d with !3 to force it to an
     /// aligned address and then ROR data by (addr & 3)*8
-    pub fn read_32_aligned(&mut self, address: u32) -> u32 {
+    pub fn read_32_aligned(&mut self, address: u32, rotated: bool) -> u32 {
         let data = self.memory.read_32(address & !3);
-        self.compute_shift_operation(data, ((address & 3) * 8) as u8, SHIFT::ROR, true)
-            .0
+        if rotated {
+            return self
+                .compute_shift_operation(data, ((address & 3) * 8) as u8, SHIFT::ROR, true)
+                .0;
+        }
+        data
     }
     /// Reads a halfword(16-bit).<br>
     /// If the address is misaligned(i.e., address not a multiple of 4), it gets &'d with !3 to force it to an
     /// aligned address and then ROR data by (addr & 3)*8
     /// Source: https://problemkaputt.de/gbatek.htm#armcpumemoryalignments
-    pub fn read_16_aligned_unsigned(&mut self, address: u32) -> u16 {
+    pub fn read_16_aligned_unsigned(&mut self, address: u32, rotated: bool) -> u16 {
         let data = self.memory.read_16(address & !3);
-        self.compute_shift_operation(data as u32, ((address & 3) * 8) as u8, SHIFT::ROR, true)
-            .0 as u16
+        if rotated {
+            return self
+                .compute_shift_operation(data as u32, ((address & 3) * 8) as u8, SHIFT::ROR, true)
+                .0 as u16;
+        }
+        data
     }
 
-    pub fn read_16_aligned_signed(&mut self, address: u32) -> i16 {
+    pub fn read_16_aligned_signed(&mut self, address: u32, rotated: bool) -> i16 {
         let data = self.memory.read_16(address & !3);
-        self.compute_shift_operation(data as u32, ((address & 3) * 8) as u8, SHIFT::ROR, true)
-            .0 as i16
+        if rotated {
+            return self
+                .compute_shift_operation(data as u32, ((address & 3) * 8) as u8, SHIFT::ROR, true)
+                .0 as i16;
+        }
+        data as i16
     }
 
     fn read_8_signed(&mut self, address: u32) -> i8 {
@@ -1268,7 +1283,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
     }
 
     /// Writes a word(32 bit) to a word-aligned address.<br>
-    ///  /// If the address is misaligned(i.e., address not a multiple of 4), it gets &'d with !3 to force it to an
+    /// If the address is misaligned(i.e., address not a multiple of 4), it gets &'d with !3 to force it to an
     /// aligned address.
     pub fn write_32_aligned(&mut self, address: u32, value: u32) {
         let _new_address = address & !(3);
