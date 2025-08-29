@@ -78,6 +78,18 @@ impl BitRange for u32 {
         res
     }
 }
+
+/// Simple trait that converts an unsigned integer (u8/u16/u32) to a Vec of bool based on which bits are set. <br>
+/// The first element of the Vec is the LSB of the integer.
+/// #### Example
+/// ```
+/// let a: u8 = 0b1010_0110;
+/// let bv: Vec<bool> = a.to_bitvec();
+/// assert_eq!(
+///     bv,
+///     Vec::from([false, true, true, false, false, true, false, true])
+/// );
+/// ```
 pub trait ToBitVec {
     fn to_bitvec(&self) -> Vec<bool>;
 }

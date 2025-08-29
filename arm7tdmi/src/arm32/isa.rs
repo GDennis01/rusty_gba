@@ -1,8 +1,11 @@
 #![allow(non_snake_case)]
 use core::panic;
 
+use alloc::vec::Vec;
+
 use crate::cpu::{MemoryInterface, OperatingMode, CPU};
 use crate::BitRange;
+use crate::ToBitVec;
 #[derive(Debug)]
 pub enum OpcodeArm {
     ADC,
@@ -961,6 +964,83 @@ impl<T: MemoryInterface + Default> CPU<T> {
         //     self.set_register(base_register, address);
         // }
         // self.set_register(dest_register, data as u32)
+    }
+    /// Load or Store multiple words at once.<br>
+    /// LDM Rn, {<Register List} load the content from Rn (memory) to register list <br>
+    /// STM Rn, {<Register List} store the content of register list into the memory <br>
+    /// Based on P (pre/post indexing) and U (add/sub offset) bit, we have 4 different addressing modes:<br>
+    /// - Increase After (IA)<br>
+    /// - Increase Before (IB)<br>
+    /// - Decrease After (DA)<br>
+    /// - Decrease Before (DB)<br>
+    ///
+    /// There are also different mnemonics related to stack usage (ED,FD, EA, FA) however they differ based on wheter it's LDM or STM.<br>
+    /// Register list should not be empty
+    /// #### Example
+    /// STM R10, {R0-R3} -> mem\[R10\] = R0, mem\[R10+4\] = R1, mem\[R10+8\] = R2, mem\[R10+12\] = R3 <br>
+    /// LDM R10, {R0-R3} -> R0 = mem\[R10\], R1 = mem\[R10+4\], R2 = mem\[R10+8\], R3 = mem\[R10+12\] <br>
+    pub fn LDM_STM(&mut self, instruction: u32, instr_type: OpcodeArm) {
+        let register_list: u32 = instruction.bit_range(0..=15); // Rlist
+
+        // let register_list: Vec<bool> = register_list_raw.to_bitvec();
+        let base_register: u32 = instruction.bit_range(16..=19); // Rn
+
+        // flags
+        let is_load: bool = instruction.bit(20);
+        let is_write_back: bool = instruction.bit(21);
+        // TODO: implement S bit check (psr)
+        let is_psr_update: bool = instruction.bit(22);
+        let is_add: bool = instruction.bit(23);
+        let is_post: bool = !instruction.bit(24);
+
+        let mut address = base_register;
+
+        // If rlist is empty (rlist=0), then r15 is loaded/stored and Rb=Rb+/-40h (??)
+        if register_list == 0 {
+            todo!()
+        }
+        // first entry in the register list with the bit set
+        let first_entry: u32 = register_list.trailing_zeros();
+        let n_entries: u32 = register_list.count_ones();
+
+        for i in 0..=15 {
+            // data transfer only if the register is in the bitmask (reg_list[i] == true)
+            if !register_list.bit(i) {
+                continue;
+            }
+            let r_i = self.get_register(i as u8);
+            if is_post {
+                if is_load {
+                    self.set_register(i as u8, self.memory.read_32(address));
+                } else {
+                    self.memory.write_32(address, r_i);
+                }
+                address = if is_add { address + 4 } else { address - 4 }; // Increment After and Decrement After
+            } else {
+                address = if is_add { address + 4 } else { address - 4 }; // Increment Before and Decrement Before
+                if is_load {
+                    self.set_register(i as u8, self.memory.read_32(address));
+                } else {
+                    self.memory.write_32(address, r_i);
+                }
+            }
+        }
+        // if the base register is in the register list and it's the first and there's writeback, store old base register
+        if first_entry == base_register && is_write_back {
+            self.set_register(base_register as u8, base_register); // technically this is shouldn't be needed
+        } else {
+            if is_add {
+                self.set_register(
+                    base_register as u8,
+                    base_register.wrapping_add(n_entries * 4),
+                );
+            } else {
+                self.set_register(
+                    base_register as u8,
+                    base_register.wrapping_sub(n_entries * 4),
+                );
+            }
+        }
     }
 
     /*************************************************
