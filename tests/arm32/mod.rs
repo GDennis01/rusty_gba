@@ -1,3 +1,4 @@
+pub mod block_data_transfer;
 pub mod data_processing;
 pub mod half_data_transfer;
 pub mod multiply;

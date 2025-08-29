@@ -1,5 +1,3 @@
-use core::assert_eq;
-
 use arm7tdmi::cpu::*;
 use arm7tdmi::BitRange;
 use gba::memory::Memory;

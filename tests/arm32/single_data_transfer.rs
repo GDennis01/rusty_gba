@@ -93,7 +93,7 @@ fn index_writeback() {
     let mut cpu: CPU<Memory> = CPU::new();
     //   mov     r0, 32
     cpu.execute_arm(cpu.decode(0xE3A0_0020));
-    let mut r0 = cpu.get_register(0u8);
+    let r0 = cpu.get_register(0u8);
     assert_eq!(r0, 32);
 
     //   mov     r1, 1

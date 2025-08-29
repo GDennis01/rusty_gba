@@ -979,7 +979,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
     /// #### Example
     /// STM R10, {R0-R3} -> mem\[R10\] = R0, mem\[R10+4\] = R1, mem\[R10+8\] = R2, mem\[R10+12\] = R3 <br>
     /// LDM R10, {R0-R3} -> R0 = mem\[R10\], R1 = mem\[R10+4\], R2 = mem\[R10+8\], R3 = mem\[R10+12\] <br>
-    pub fn LDM_STM(&mut self, instruction: u32, instr_type: OpcodeArm) {
+    pub fn LDM_STM(&mut self, instruction: u32) {
         let register_list: u32 = instruction.bit_range(0..=15); // Rlist
 
         // let register_list: Vec<bool> = register_list_raw.to_bitvec();
@@ -991,9 +991,10 @@ impl<T: MemoryInterface + Default> CPU<T> {
         // TODO: implement S bit check (psr)
         let is_psr_update: bool = instruction.bit(22);
         let is_add: bool = instruction.bit(23);
-        let is_post: bool = !instruction.bit(24);
+        let mut is_post: bool = !instruction.bit(24);
 
-        let mut address = base_register;
+        let base_address = self.get_register(base_register as u8);
+        let mut address = base_address;
 
         // If rlist is empty (rlist=0), then r15 is loaded/stored and Rb=Rb+/-40h (??)
         if register_list == 0 {
@@ -1003,6 +1004,26 @@ impl<T: MemoryInterface + Default> CPU<T> {
         let first_entry: u32 = register_list.trailing_zeros();
         let n_entries: u32 = register_list.count_ones();
 
+        if is_psr_update {
+            if register_list.bit(14) {
+                // S=1 and R15 in Rlist
+                todo!()
+            }
+        }
+        //  LDM is_add and post     -> R_0 = mem[x]    R_1 = mem[x+4]  R_2 = mem[x+8]
+        //  LDM is_add and pre      -> R_0 = mem[x+4]  R_1 = mem[x+8]  R_2 = mem[x+12]
+        //  LDM !is_add and is_post -> R_0 = mem[x-8]  R_1 = mem[x-4]  R_2 = mem[x]
+        //  LDM !is_add and pre     -> R_0 = mem[x-12] R_1 = mem[x-8]  R_2 = mem[x-4]
+
+        //  STM is_add and post     -> mem[x] = R0     mem[x+4] = R1   mem[x+8] = R2
+        //  STM is_add and pre      -> mem[x+4] = R0   mem[x+8] = R1   mem[x+12] = R2
+        //  STM !is_add and post     > mem[x-8] = R0     mem[x-4] = R1   mem[x] = R2
+        //  STM !is_add and pre     -> mem[x-12] = R0     mem[x-8] = R1   mem[x-4] = R2
+
+        if !is_add {
+            address = base_address.wrapping_sub(4 * (n_entries));
+            is_post = !is_post; // if U=0 (sub offset), then the post/pre logic is inverted
+        }
         for i in 0..=15 {
             // data transfer only if the register is in the bitmask (reg_list[i] == true)
             if !register_list.bit(i) {
@@ -1011,13 +1032,16 @@ impl<T: MemoryInterface + Default> CPU<T> {
             let r_i = self.get_register(i as u8);
             if is_post {
                 if is_load {
+                    let _val = self.memory.read_32(address);
                     self.set_register(i as u8, self.memory.read_32(address));
                 } else {
                     self.memory.write_32(address, r_i);
                 }
-                address = if is_add { address + 4 } else { address - 4 }; // Increment After and Decrement After
+                // address = if is_add { address + 4 } else { address - 4 }; // Increment After and Decrement After
+                address += 4;
             } else {
-                address = if is_add { address + 4 } else { address - 4 }; // Increment Before and Decrement Before
+                // address = if is_add { address + 4 } else { address - 4 }; // Increment Before and Decrement Before
+                address += 4;
                 if is_load {
                     self.set_register(i as u8, self.memory.read_32(address));
                 } else {
@@ -1027,17 +1051,17 @@ impl<T: MemoryInterface + Default> CPU<T> {
         }
         // if the base register is in the register list and it's the first and there's writeback, store old base register
         if first_entry == base_register && is_write_back {
-            self.set_register(base_register as u8, base_register); // technically this is shouldn't be needed
+            self.set_register(base_register as u8, base_address); // technically this is shouldn't be needed
         } else {
             if is_add {
                 self.set_register(
                     base_register as u8,
-                    base_register.wrapping_add(n_entries * 4),
+                    base_address.wrapping_add(n_entries * 4),
                 );
             } else {
                 self.set_register(
                     base_register as u8,
-                    base_register.wrapping_sub(n_entries * 4),
+                    base_address.wrapping_sub(n_entries * 4),
                 );
             }
         }
