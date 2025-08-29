@@ -1052,7 +1052,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
         // if the base register is in the register list and it's the first and there's writeback, store old base register
         if first_entry == base_register && is_write_back {
             self.set_register(base_register as u8, base_address); // technically this is shouldn't be needed
-        } else {
+        } else if is_write_back {
             if is_add {
                 self.set_register(
                     base_register as u8,
