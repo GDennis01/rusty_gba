@@ -1,0 +1,29 @@
+{
+	// Place your rusty_gba workspace snippets here. Each snippet is defined under a snippet name and has a scope, prefix, body and 
+	// description. Add comma separated ids of the languages where the snippet is applicable in the scope field. If scope 
+	// is left empty or omitted, the snippet gets applied to all languages. The prefix is what is 
+	// used to trigger the snippet and the body will be expanded and inserted. Possible variables are: 
+	// $1, $2 for tab stops, $0 for the final cursor position, and ${1:label}, ${2:another} for placeholders. 
+	// Placeholders with the same ids are connected.
+	// Example:
+	"cpu_execute_decode": {
+		"prefix": "ced",
+		"body": "cpu.execute_arm(cpu.decode(0x$0));",
+		"description": "Expands into cpu.execute_arm(cpu.decode())"
+	},
+	"assert_eq": {
+		"prefix": "aeq",
+		"body": "assert_eq!($0,);",
+		"description": "Expands into assert_eq!()"
+	},
+	"get_register": {
+		"prefix": "reg",
+		"body": "cpu.get_register($0u8);",
+		"description": "Expands into cpu.get_register()"
+	},
+	"check compare": {
+		"prefix": "cmp",
+		"body": "assert!(cpu.psr[cpu.operating_mode].get_z());",
+		"description": "Check if the Zero flag (cmp) flag is true"
+	}
+}
