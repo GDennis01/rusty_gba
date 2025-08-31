@@ -988,7 +988,6 @@ impl<T: MemoryInterface + Default> CPU<T> {
         // flags
         let is_load: bool = instruction.bit(20);
         let is_write_back: bool = instruction.bit(21);
-        // TODO: implement S bit check (psr)
         let is_psr_update: bool = instruction.bit(22);
         let is_add: bool = instruction.bit(23);
         let mut is_post: bool = !instruction.bit(24);
@@ -998,18 +997,30 @@ impl<T: MemoryInterface + Default> CPU<T> {
 
         let mut address = base_address;
 
-        // If rlist is empty (rlist=0), then r15 is loaded/stored and Rb=Rb+/-40h (??)
-        if register_list == 0 {
-            todo!()
-        }
         // first entry in the register list with the bit set
         let first_entry: u32 = register_list.trailing_zeros();
         let n_entries: u32 = register_list.count_ones();
 
+        // if 0, S bit not set
+        let mut transfer_spsr: bool = false;
+        let mut user_bank_transfer: bool = false;
+        let prev_op_mode: OperatingMode = self.operating_mode;
+
         if is_psr_update {
             if register_list.bit(14) {
                 // S=1 and R15 in Rlist
-                todo!()
+                if is_load {
+                    // spsr_<mode> transferred to cpsr at the same time r15 is loaded
+                    transfer_spsr = true;
+                } else {
+                    // register transferred are taken from user bank rather than current mode bank
+                    user_bank_transfer = true;
+                    self.operating_mode = OperatingMode::User;
+                }
+            } else {
+                // register transferred are taken from user bank rather than current mode bank
+                user_bank_transfer = true;
+                self.operating_mode = OperatingMode::User;
             }
         }
         //  LDM is_add and post     -> R_0 = mem[x]    R_1 = mem[x+4]  R_2 = mem[x+8]
@@ -1023,18 +1034,55 @@ impl<T: MemoryInterface + Default> CPU<T> {
         //  STM !is_add and pre     -> mem[x-12] = R0     mem[x-8] = R1   mem[x-4] = R2
 
         if !is_add {
-            address = base_address.wrapping_sub(4 * (n_entries));
+            if register_list != 0 {
+                address = base_address.wrapping_sub(4 * (n_entries));
+            }
             is_post = !is_post; // if U=0 (sub offset), then the post/pre logic is inverted
+        }
+
+        // If rlist is empty (rlist=0), then r15 is loaded/stored and Rb=Rb+/-40h (??)
+        // FIXME: this may be broken
+        if register_list == 0 {
+            if is_post {
+                if is_load {
+                    let _val = self.read_32_aligned(address, false);
+                    self.set_register(15, _val);
+                    address = if is_add {
+                        address + 0x40
+                    } else {
+                        address - 0x40
+                    };
+                } else {
+                }
+            } else {
+                if is_load {
+                    address = if is_add {
+                        address + 0x40
+                    } else {
+                        address - 0x40
+                    };
+                    let _val = self.read_32_aligned(address, false);
+                    self.set_register(15, _val);
+                } else {
+                }
+            }
         }
         for i in 0..=15 {
             // data transfer only if the register is in the bitmask (reg_list[i] == true)
             if !register_list.bit(i) {
                 continue;
             }
-            let r_i = self.get_register(i as u8);
+            let mut r_i = self.get_register(i as u8);
+            if i == 15 {
+                // PC + 12 wrt to STM instruction if reg is 15
+                r_i += 8;
+            }
             if is_post {
                 if is_load {
                     let _val = self.read_32_aligned(address, false);
+                    if transfer_spsr && i == 15 {
+                        self.psr[0].register = self.psr[self.operating_mode].register;
+                    }
                     self.set_register(i as u8, _val);
                 } else {
                     self.write_32_aligned(address, r_i);
@@ -1046,6 +1094,9 @@ impl<T: MemoryInterface + Default> CPU<T> {
                 address += 4;
                 if is_load {
                     let _val = self.read_32_aligned(address, false);
+                    if transfer_spsr && i == 15 {
+                        self.psr[0].register = self.psr[self.operating_mode].register;
+                    }
                     self.set_register(i as u8, _val);
                 } else {
                     self.write_32_aligned(address, r_i);
@@ -1067,6 +1118,10 @@ impl<T: MemoryInterface + Default> CPU<T> {
                     base_address.wrapping_sub(n_entries * 4),
                 );
             }
+        }
+        // if S is set and is in User bank transfer, resume the previous operating mode
+        if user_bank_transfer {
+            self.operating_mode = prev_op_mode;
         }
     }
 

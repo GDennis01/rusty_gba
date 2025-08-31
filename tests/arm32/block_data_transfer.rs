@@ -403,3 +403,67 @@ fn ldm_stm_memory_alignment() {
     assert_eq!(r2, r3);
     assert!(cpu.psr[cpu.operating_mode].get_z());
 }
+
+#[test]
+fn ldm_stm_load_pc_store_pc_plus_4() {
+    // Load PC test
+    let mut cpu: CPU<Memory> = CPU::new();
+    // mov      r11, 50331648 (mem)    r11 since r2 will be used later
+    cpu.execute_arm(cpu.decode(0xE3A0_B403));
+    let mut r11 = cpu.get_register(11u8);
+    assert_eq!(r11, 50331648);
+
+    // add r11, 64
+    // to prevent illegal memory access (GBA only)
+    cpu.execute_arm(cpu.decode(0xE28B_B040));
+    r11 = cpu.get_register(11u8);
+    assert_eq!(r11, 50331648 + 64);
+
+    // adr r1, #4 ( add r1,pc,#4)
+    cpu.execute_arm(cpu.decode(0xE28F_1004));
+    let r1 = cpu.get_register(1u8);
+    let r15 = cpu.get_register(15u8);
+    assert_eq!(r1, r15 + 12); // r1 contains the pc at 3 instructions ahead https://github.com/jsmolka/gba-tests/blob/master/arm/block_transfer.asm#L154C10-L154C25
+
+    // stmfd   r11!, {r0, r1}
+    cpu.execute_arm(cpu.decode(0xE92B_0003));
+    r11 = cpu.get_register(11u8);
+    assert_eq!(r11, 50331648 + 64 - 8);
+    assert_eq!(0, cpu.memory.read_32(50331648 + 64 - 8)); // R0 is just 0
+    assert_eq!(24, cpu.memory.read_32(50331648 + 64 - 4)); //R1 points at the Store PC+4 test first instruction
+
+    // ldmfd   r11!, {r0, pc}
+    cpu.execute_arm(cpu.decode(0xE8BB_8001));
+    let r0 = cpu.get_register(0u8);
+    let r15 = cpu.get_register(15u8);
+    assert_eq!(r0, 0);
+    assert_eq!(r15, 24);
+
+    // Store PC+4 test
+
+    // stmfd   r11!, {r0, pc}
+    cpu.execute_arm(cpu.decode(0xE92B_8001));
+    r11 = cpu.get_register(11u8);
+    assert_eq!(r11, 50331648 + 64 - 8);
+    assert_eq!(0, cpu.memory.read_32(50331648 + 64 - 8)); // R0 is just 0
+    assert_eq!(36, cpu.memory.read_32(50331648 + 64 - 4)); //PC correctly pointing at next instruction
+
+    // mov     r0, pc
+    cpu.execute_arm(cpu.decode(0xE1A0_000F));
+    let r0 = cpu.get_register(0u8);
+    assert_eq!(r0, 36);
+
+    // ldmfd   r11!, {r1, r2}
+    cpu.execute_arm(cpu.decode(0xE8BB_0006));
+    let r1 = cpu.get_register(1u8);
+    let r2 = cpu.get_register(2u8);
+    assert_eq!(r1, 0);
+    assert_eq!(r2, 36);
+
+    // cmp     r0, r2
+    cpu.execute_arm(cpu.decode(0xE150_0002));
+    let r0 = cpu.get_register(0u8);
+    let r2 = cpu.get_register(2u8);
+    assert_eq!(r0, r2);
+    assert!(cpu.psr[cpu.operating_mode].get_z());
+}
