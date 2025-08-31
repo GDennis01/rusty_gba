@@ -126,6 +126,10 @@ impl<T: MemoryInterface + Default> CPU<T> {
         //only Hi registers(8-14) are banked
         if reg < 8 || reg == 15 {
             self.registers[reg as usize] = data;
+            if reg == 15 {
+                // always flush pipeline whenever a write on r15 occurs
+                self.flush_pipeline();
+            }
             return;
         }
         match self.operating_mode {
