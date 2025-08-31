@@ -21,7 +21,7 @@ pub struct Memory {
 impl Memory {
     pub fn init_bios(&mut self, data: Vec<u8>) {
         let len = self.bios.len();
-        print!("{} e  {}", data.len(), len);
+        // print!("{} e  {}", data.len(), len);
         self.bios[0..len].copy_from_slice(&data[0..len]);
     }
     pub fn dbg_dump(&self) {

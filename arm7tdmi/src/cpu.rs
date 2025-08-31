@@ -8,7 +8,11 @@ use crate::{
     BitRange,
 };
 use alloc::boxed::Box;
-use core::{fmt, ops::Index, ops::IndexMut};
+use core::{
+    fmt::{self, write},
+    ops::{Index, IndexMut},
+    panic,
+};
 // use std::{fmt, ops::Index, ops::IndexMut};
 
 //Used to index  banked registers.
@@ -390,6 +394,96 @@ impl fmt::Display for Instruction {
         match self.cond {
             Condition::AL => write!(f, "{:?} {:#06x?}", self.opc, self.data),
             _ => write!(f, "{:?}{:?} {:#06x?}", self.opc, self.cond, self.data),
+        }
+    }
+}
+
+impl fmt::Display for Opcode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Opcode::Arm32(opcode_arm) => match opcode_arm {
+                ADC => todo!(),
+                ADD => todo!(),
+                AND => todo!(),
+                B => todo!(),
+                BIC => todo!(),
+                BX => todo!(),
+                CMN => todo!(),
+                CMP => todo!(),
+                EOR => todo!(),
+                LDM => todo!(),
+                LDR => todo!(),
+                LDRB => todo!(),
+                LDRH => todo!(),
+                LDRSB => todo!(),
+                LDRSH => todo!(),
+                MLA => todo!(),
+                MOV => todo!(),
+                MRS => todo!(),
+                MSR => todo!(),
+                MUL => todo!(),
+                MVN => todo!(),
+                ORR => todo!(),
+                RSB => todo!(),
+                RSC => todo!(),
+                SBC => todo!(),
+                SMLAL => todo!(),
+                SMULL => todo!(),
+                STM => todo!(),
+                STR => todo!(),
+                STRB => todo!(),
+                STRH => todo!(),
+                SUB => todo!(),
+                SWI => todo!(),
+                SWP => todo!(),
+                SWPB => todo!(),
+                TEQ => todo!(),
+                TST => todo!(),
+                UMLAL => todo!(),
+                UMULL => todo!(),
+                UNDEF => todo!(),
+                DBG => todo!(),
+            },
+            Opcode::Thumb(opcode_thumb) => match opcode_thumb {
+                OpcodeThumb::ADC => write!(f, "ADC"),
+                OpcodeThumb::ADD => todo!(),
+                OpcodeThumb::AND => todo!(),
+                OpcodeThumb::ASR => todo!(),
+                OpcodeThumb::B => todo!(),
+                OpcodeThumb::Bxx => todo!(),
+                OpcodeThumb::BIC => todo!(),
+                OpcodeThumb::BL => todo!(),
+                OpcodeThumb::BX => todo!(),
+                OpcodeThumb::CMN => todo!(),
+                OpcodeThumb::CMP => todo!(),
+                OpcodeThumb::EOR => todo!(),
+                OpcodeThumb::LDMIA => todo!(),
+                OpcodeThumb::LDR => todo!(),
+                OpcodeThumb::LDRB => todo!(),
+                OpcodeThumb::LDRH => todo!(),
+                OpcodeThumb::LSL => todo!(),
+                OpcodeThumb::LDSB => todo!(),
+                OpcodeThumb::LDSH => todo!(),
+                OpcodeThumb::LDRSH => todo!(),
+                OpcodeThumb::LSR => todo!(),
+                OpcodeThumb::MOV => todo!(),
+                OpcodeThumb::MUL => todo!(),
+                OpcodeThumb::MVN => todo!(),
+                OpcodeThumb::NEG => todo!(),
+                OpcodeThumb::ORR => todo!(),
+                OpcodeThumb::POP => todo!(),
+                OpcodeThumb::PUSH => todo!(),
+                OpcodeThumb::ROR => todo!(),
+                OpcodeThumb::SBC => todo!(),
+                OpcodeThumb::STMIA => todo!(),
+                OpcodeThumb::STR => todo!(),
+                OpcodeThumb::STRB => todo!(),
+                OpcodeThumb::STRH => todo!(),
+                OpcodeThumb::SWI => todo!(),
+                OpcodeThumb::SUB => todo!(),
+                OpcodeThumb::TST => todo!(),
+                OpcodeThumb::UNDEF => todo!(),
+            },
         }
     }
 }
