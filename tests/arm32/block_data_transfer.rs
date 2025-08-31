@@ -467,3 +467,10 @@ fn ldm_stm_load_pc_store_pc_plus_4() {
     assert_eq!(r0, r2);
     assert!(cpu.psr[cpu.operating_mode].get_z());
 }
+
+//TODO
+#[test]
+fn ldm_stm_store_user_registers() {}
+
+#[test]
+fn ldm_stm_load_user_registers() {}

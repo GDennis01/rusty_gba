@@ -196,6 +196,24 @@ impl<T: MemoryInterface + Default> CPU<T> {
             _ => todo!(),
         }
     }
+
+    // Draft of a run loop
+    pub fn run_loop(&mut self) {
+        //  init
+        self.pipeline[0] = self.memory.read_32(self.registers[15]); // ex stage
+        self.pipeline[1] = self.memory.read_32(self.registers[15] + 4); //decode stage
+        self.pipeline[2] = self.memory.read_32(self.registers[15] + 8); //fetch stage
+
+        // since it's a draft, i test only 256 iterations
+        // in the final version there should be some sort of check to terminate the loop
+        for _ in 0..=256 {
+            // TODO: logic to switch to thumb
+            self.execute_arm(self.decode(self.pipeline[0]));
+            self.pipeline[0] = self.pipeline[1];
+            self.pipeline[1] = self.pipeline[2];
+            self.pipeline[2] = self.registers[15] + 8;
+        }
+    }
 }
 
 ///Program Status Register, a special register containing various flag of current CPU state
