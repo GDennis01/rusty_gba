@@ -28,7 +28,7 @@ pub fn main() {
     cpu.memory.init_bios(_bios);
     for (i, instr) in cpu.memory.bios.clone().chunks(4).into_iter().enumerate() {
         let instr_as_u32 = u32::from_le_bytes([instr[0], instr[1], instr[2], instr[3]]);
-        let instr_fmt = format!("{}:{}\n", i * 4, cpu.decode(instr_as_u32));
+        let instr_fmt = format!("{:06}:{}\n", i * 4, cpu.decode(instr_as_u32));
         file.write_all(instr_fmt.as_bytes()).unwrap();
     }
     // cpu.memory.dbg_dump();

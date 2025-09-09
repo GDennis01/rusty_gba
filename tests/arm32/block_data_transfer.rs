@@ -1,5 +1,4 @@
 use arm7tdmi::cpu::*;
-use arm7tdmi::BitRange;
 use gba::memory::Memory;
 /// Tests provided by https://github.com/jsmolka/gba-tests/blob/master/arm/halfword_transfer.asm and
 /// decoded,instruction by instruction, through https://shell-storm.org/online/Online-Assembler-and-Disassembler
@@ -468,9 +467,148 @@ fn ldm_stm_load_pc_store_pc_plus_4() {
     assert!(cpu.psr[cpu.operating_mode].get_z());
 }
 
-//TODO
 #[test]
-fn ldm_stm_store_user_registers() {}
+fn ldm_stm_store_user_registers() {
+    let mut cpu: CPU<Memory> = CPU::new();
+    // changing to priv mode so I can change control bits
+    cpu.psr[0].register = 0x1F; //SYS
+    cpu.update_operating_mode(false);
+    match cpu.operating_mode {
+        OperatingMode::System => assert!(true),
+        _ => assert!(false),
+    }
+
+    // mov      r11, 50331648 (mem)    r11
+    cpu.execute_arm(cpu.decode(0xE3A0_B403));
+    let mut r11 = cpu.get_register(11u8);
+    assert_eq!(r11, 50331648);
+
+    // add r11, 64
+    // to prevent illegal memory access (GBA only)
+    cpu.execute_arm(cpu.decode(0xE28B_B040));
+    r11 = cpu.get_register(11u8);
+    assert_eq!(r11, 50331648 + 64);
+
+    // mov      r0, r11
+    cpu.execute_arm(cpu.decode(0xE1A0_000B));
+    let r11 = cpu.get_register(11u8);
+    let mut r0 = cpu.get_register(0u8);
+    assert_eq!(r0, r11);
+
+    // mov r8, 32
+    cpu.execute_arm(cpu.decode(0xE3A0_8020));
+    let r8 = cpu.get_register(8u8);
+    assert_eq!(r8, 32);
+
+    // msr cpsr, MODE_FIQ
+    cpu.execute_arm(cpu.decode(0xE329_F011));
+    match cpu.operating_mode {
+        OperatingMode::FIQ => assert!(true),
+        _ => assert!(false),
+    }
+
+    // mov r8, 64
+    cpu.execute_arm(cpu.decode(0xE3A0_8040));
+    let r8 = cpu.get_register(8u8);
+    assert_eq!(r8, 64);
+
+    // stmfd   r0, {r8, r9}^
+    cpu.execute_arm(cpu.decode(0xE940_0300));
+    r0 = cpu.get_register(0u8);
+    assert_eq!(r0, 50331648 + 64);
+    assert_eq!(32, cpu.memory.read_32(50331648 + 64 - 8)); // S (^) is set, thus user bank is transferred rather than current mode one
+
+    // sub r0,8
+    cpu.execute_arm(cpu.decode(0xE240_0008));
+    r0 = cpu.get_register(0u8);
+    assert_eq!(r0, 50331648 + 64 - 8);
+
+    // msr cpsr, 0x1F (MODE_SYS)
+    cpu.execute_arm(cpu.decode(0xE329_F01F));
+    match cpu.operating_mode {
+        OperatingMode::System => assert!(true),
+        _ => assert!(false),
+    }
+
+    // ldmfd   r0, {r1, r2}
+    cpu.execute_arm(cpu.decode(0xE890_0006));
+    let r1 = cpu.get_register(1u8);
+    assert_eq!(r1, 32);
+
+    //cmp r1,32
+    cpu.execute_arm(cpu.decode(0xE351_0020));
+    assert!(cpu.psr[cpu.operating_mode].get_z()); //Z must be set to 1
+}
 
 #[test]
-fn ldm_stm_load_user_registers() {}
+fn ldm_stm_load_user_registers() {
+    let mut cpu: CPU<Memory> = CPU::new();
+    // changing to priv mode so I can change control bits
+    cpu.psr[0].register = 0x1F; //SYS
+    cpu.update_operating_mode(false);
+    match cpu.operating_mode {
+        OperatingMode::System => assert!(true),
+        _ => assert!(false),
+    }
+
+    // mov      r11, 50331648 (mem)    r11
+    cpu.execute_arm(cpu.decode(0xE3A0_B403));
+    let mut r11 = cpu.get_register(11u8);
+    assert_eq!(r11, 50331648);
+
+    // add r11, 64
+    // to prevent illegal memory access (GBA only)
+    cpu.execute_arm(cpu.decode(0xE28B_B040));
+    r11 = cpu.get_register(11u8);
+    assert_eq!(r11, 50331648 + 64);
+
+    // mov      r0, r11
+    cpu.execute_arm(cpu.decode(0xE1A0_000B));
+    let r11 = cpu.get_register(11u8);
+    let mut r0 = cpu.get_register(0u8);
+    assert_eq!(r0, r11);
+
+    // mov      r1, 0xA
+    cpu.execute_arm(cpu.decode(0xE3A0_100A));
+    let r1 = cpu.get_register(1u8);
+    assert_eq!(r1, 0xA);
+
+    // stmfd   r0!, {r1, r2}
+    cpu.execute_arm(cpu.decode(0xE920_0006));
+    r0 = cpu.get_register(0u8);
+    assert_eq!(r0, 50331648 + 64 - 8);
+    assert_eq!(0xA, cpu.memory.read_32(50331648 + 64 - 8));
+
+    // msr cpsr, MODE_FIQ
+    cpu.execute_arm(cpu.decode(0xE329_F011));
+    match cpu.operating_mode {
+        OperatingMode::FIQ => assert!(true),
+        _ => assert!(false),
+    }
+
+    // mov r8,      0xB
+    cpu.execute_arm(cpu.decode(0xE3A0_800B));
+    let r8 = cpu.get_register(8u8);
+    assert_eq!(r8, 0xB);
+
+    // ldmfd   r0, {r8, r9}^
+    cpu.execute_arm(cpu.decode(0xE8D0_0300));
+    let r8 = cpu.get_register(8u8);
+    assert_eq!(r8, 0xB);
+
+    // msr cpsr, 0x1F (MODE_SYS)
+    cpu.execute_arm(cpu.decode(0xE329_F01F));
+    match cpu.operating_mode {
+        OperatingMode::System => assert!(true),
+        _ => assert!(false),
+    }
+
+    // cmp r8, 0xA
+    cpu.execute_arm(cpu.decode(0xE358_000A));
+    let r8 = cpu.get_register(8u8);
+    assert_eq!(r8, 0xA);
+}
+
+// TODO: this test
+#[test]
+fn ldm_stm_load_empty_rlist() {}

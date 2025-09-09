@@ -449,7 +449,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
             false => self.get_register(instruction.bit_range(0..=3) as u8),
         };
         if self.operating_mode != OperatingMode::User {
-            //control bits
+            //control bits (can be changed only if in priviliged mode)
             if instruction.bit(16) {
                 self.psr[psr_index].register = self.psr[psr_index].register.set_bits(0..=7, data);
                 self.update_operating_mode(instruction.bit(22));
@@ -716,161 +716,17 @@ impl<T: MemoryInterface + Default> CPU<T> {
         }
     }
 
-    //TODO: remove it when LDR_STR is fully tested
-    pub fn _LDR(&mut self, instruction: u32) {
-        let base_register = instruction.bit_range(16..=19) as u8;
-        let base_register_val = self.get_register(base_register);
-        let dest_register = instruction.bit_range(12..=15) as u8;
-        //flags
-        let is_write_back = instruction.bit(21);
-        let is_byte_transfer = instruction.bit(22);
-        let is_add = instruction.bit(23);
-        let is_post = !instruction.bit(24);
-        let is_immediate_reg = instruction.bit(25);
-
-        let offset = if is_immediate_reg {
-            self.get_shifted_op(instruction).0
-        } else {
-            instruction.bit_range(0..=11) as u32
-        };
-        //pre/post-indexing address calculation
-        let address = if is_add {
-            base_register_val + offset
-        } else {
-            base_register_val - offset
-        };
-        // if pre(!is_post), then the effective address is the address computed above, otherwhise is the base_register_val
-        let effective_address = if !is_post { address } else { base_register_val };
-
-        let data = if is_byte_transfer {
-            self.memory.read_8(effective_address) as u32
-        } else {
-            self.read_32_aligned(effective_address, true)
-        };
-        if is_post || is_write_back {
-            self.set_register(base_register, address);
-        }
-        self.set_register(dest_register, data);
-    }
-
-    //TODO: remove it when LDR_STR is fully tested
-    pub fn _STR(&mut self, instruction: u32) {
-        let base_register = instruction.bit_range(16..=19) as u8;
-        let base_register_val = self.get_register(base_register);
-        let dest_register = instruction.bit_range(12..=15) as u8;
-        let mut dest_register_val = self.get_register(dest_register);
-        if dest_register == 15 {
-            dest_register_val += 8;
-        }
-        //flags
-        let is_write_back = instruction.bit(21);
-        let is_byte_transfer = instruction.bit(22);
-        let is_add = instruction.bit(23);
-        let is_post = !instruction.bit(24);
-        let is_immediate_reg = instruction.bit(25);
-
-        let offset = if is_immediate_reg {
-            self.get_shifted_op(instruction).0
-        } else {
-            instruction.bit_range(0..=11) as u32
-        };
-        //pre/post-indexing address calculation
-        let address = if is_add {
-            base_register_val + offset
-        } else {
-            base_register_val - offset
-        };
-        // if pre(!is_post), then the effective address is the address computed above, otherwhise is the base_register_val
-        let effective_address = if !is_post { address } else { base_register_val };
-        // address = if !is_post { address } else { base_register_val };
-
-        if is_byte_transfer {
-            self.memory
-                .write_8(effective_address, dest_register_val as u8);
-        } else {
-            self.write_32_aligned(effective_address, dest_register_val);
-        }
-        if is_post || is_write_back {
-            self.set_register(base_register, address);
-        }
-    }
-
     /*************************************************
      *      Halfword and Signed Data Transfer        *
      *      TODO: making a single load/store function*
      *      and then pass only the size of the data  *
      ************************************************/
-    //TODO: remove it when LDR_STR is fully tested
-    pub fn _LDRH(&mut self, instruction: u32) {
-        let base_register = instruction.bit_range(16..=19) as u8;
-        let base_register_val = self.get_register(base_register);
-        let dest_register = instruction.bit_range(12..=15) as u8;
-        //flags
-        let is_write_back = instruction.bit(21);
-        let is_add = instruction.bit(23);
-        let is_post = !instruction.bit(24);
 
-        let lo_offset = instruction.bit_range(0..=3);
-        let hi_offset = instruction.bit_range(8..=11);
-        let offset = hi_offset << 4 | lo_offset;
-        //pre/post-indexing address calculation
-        let address = if is_add {
-            base_register_val + offset
-        } else {
-            base_register_val - offset
-        };
-        // if pre(!is_post), then the effective address is the address computed above, otherwhise is the base_register_val
-        let effective_address = if !is_post { address } else { base_register_val };
-
-        let data = self.read_16_aligned_unsigned(effective_address, true);
-
-        if is_post || is_write_back {
-            self.set_register(base_register, address);
-        }
-        self.set_register(dest_register, data as u32)
-    }
-
-    ///Like LDRH but the data is signed
-    //TODO: remove it when LDR_STR is fully tested
-    pub fn _LDRSH(&mut self, instruction: u32) {
-        let base_register = instruction.bit_range(16..=19) as u8;
-        let base_register_val = self.get_register(base_register);
-        let dest_register = instruction.bit_range(12..=15) as u8;
-        //flags
-        let is_write_back = instruction.bit(21);
-        let is_add = instruction.bit(23);
-        let is_post = !instruction.bit(24);
-
-        let lo_offset = instruction.bit_range(0..=3);
-        let hi_offset = instruction.bit_range(8..=11);
-        let offset = hi_offset << 4 | lo_offset;
-        //pre/post-indexing address calculation
-        let address = if is_add {
-            base_register_val + offset
-        } else {
-            base_register_val - offset
-        };
-        // if pre(!is_post), then the effective address is the address computed above, otherwhise is the base_register_val
-        let effective_address = if !is_post { address } else { base_register_val };
-
-        let data = self.read_16_aligned_signed(effective_address, true);
-
-        if is_post || is_write_back {
-            self.set_register(base_register, address);
-        }
-        self.set_register(dest_register, data as u32)
-    }
-
-    //TODO: remove it when LDR_STR is fully tested
-    pub fn _STRH(&mut self, instruction: u32) {
-        todo!()
-    }
     /// Load an signed/unsigned extended halfword(16-bit) or signed extended byte from a specified base register(plus/minus a possible shifted offset register).<br>
     /// Extendend: While loading an halfword, bits 0-15 of the dst register are copied, while remaining bits are copied from bit 15(Only for Signed Halfword, otherwise 0 is copied). Same thing for the byte version.
     /// If specified, modified register can be written back to base register(W flag).<br>
     /// Offset can be added before(pre-indexing) or after(post-indexing) the transfer.<br>
     /// Post-indexing always writes back to base register, thus it's redundant setting W to 1(except for forcing non priviliged mode for transfer)
-    /// TODO: test this function and finish it with STRH
     /// Maybe one big LDR_STR function that encompass both LDR_STR and LDR_STR_HALF?
     pub fn LDR_STR_HALF(&mut self, instruction: u32, instr_type: OpcodeArm) {
         let base_register = instruction.bit_range(16..=19) as u8;

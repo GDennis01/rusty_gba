@@ -393,7 +393,7 @@ fn store_writeback_same_register() {
 }
 
 #[test]
-// TODO: idk if this test is successful (prolly yes??)
+// TODO: idk if this test is successful
 fn store_writeback_same_register2() {
     let mut cpu: CPU<Memory> = CPU::new();
 
