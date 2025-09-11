@@ -81,6 +81,18 @@ impl<T: MemoryInterface + Default> CPU<T> {
         self.set_register(15u8, (offset + (pc + 4) as i32) as u32);
     }
 
+    /// SWI - Software Interrupt
+    /// Enters in Supervisor mode and causes the software interrupt trap to be taken
+    /// PC is forced to 0x08 (swi trap exception vector) and CPSR saved to SPSR_svc
+    pub fn SWI(&mut self, _instruction: u32) {
+        let cpsr = self.psr[0];
+        // saving cpsr in SPSR_svc
+        self.psr[OperatingMode::Supervisor] = cpsr;
+        // setting PC to 0x08
+        self.set_register(15u8, 0x08);
+        // changing mode to svc
+        self.operating_mode = OperatingMode::Supervisor;
+    }
     /************************************************
      * DATA PROCESSING INSTRUCTIONS AND PSR TRANSFER*
      * TODO: All dp instructions should behave      *

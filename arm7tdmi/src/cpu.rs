@@ -188,7 +188,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
             Opcode::Arm32(SMLAL) => self.SMLAL(instruction.data),
             Opcode::Arm32(SMULL) => self.SMULL(instruction.data),
             Opcode::Arm32(SUB) => self.SUB(instruction.data),
-            Opcode::Arm32(SWI) => todo!(),
+            Opcode::Arm32(SWI) => self.SWI(instruction.data),
             Opcode::Arm32(SWP) => self.SWP(instruction.data),
             Opcode::Arm32(TEQ) => self.TEQ(instruction.data),
             Opcode::Arm32(TST) => self.TST(instruction.data),
