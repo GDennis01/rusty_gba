@@ -79,7 +79,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
     }
     /// Flush the pipeline.<br>
     /// Called whenever a write on R15(PC) occurs
-    /// TODO
+    /// TODO flush pipeline
     pub fn flush_pipeline(&mut self) {}
 
     ///Get the specified  register value, taking into account banked registers

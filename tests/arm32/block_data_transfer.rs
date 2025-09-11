@@ -1,3 +1,5 @@
+use core::cell;
+
 use arm7tdmi::cpu::*;
 use gba::memory::Memory;
 /// Tests provided by https://github.com/jsmolka/gba-tests/blob/master/arm/halfword_transfer.asm and
@@ -611,4 +613,92 @@ fn ldm_stm_load_user_registers() {
 
 // TODO: this test
 #[test]
-fn ldm_stm_load_empty_rlist() {}
+fn ldm_stm_load_empty_rlist() {
+    let mut cpu: CPU<Memory> = CPU::new();
+
+    // mov      r11, 50331648 (mem)    r11
+    cpu.execute_arm(cpu.decode(0xE3A0_B403));
+    let r11 = cpu.get_register(11u8);
+    assert_eq!(r11, 50331648);
+
+    // adr r0, #8
+    cpu.execute_arm(cpu.decode(0xE28F_0008));
+    let r0 = cpu.get_register(0u8);
+    let r15 = cpu.get_register(15u8);
+    assert_eq!(r0, r15 + 16);
+
+    // str     r0, [r11]
+    cpu.execute_arm(cpu.decode(0xE58B_0000));
+    assert_eq!(r0, cpu.memory.read_32(50331648));
+
+    // mov r0, r11
+    cpu.execute_arm(cpu.decode(0xE1A0_000B));
+    let r11 = cpu.get_register(11u8);
+    let r0 = cpu.get_register(0u8);
+    assert_eq!(r0, r11);
+
+    // ldmia r0!, {}
+    cpu.execute_arm(cpu.decode(0xE8B00000));
+    // rlist is empty, so r15 is transferred instead and r0= r0+0x40
+    let r15 = cpu.get_register(15u8);
+    assert_eq!(r15, cpu.memory.read_32(r0));
+
+    // sub     r0, 0x40
+    cpu.execute_arm(cpu.decode(0xE240_0040));
+    let r0 = cpu.get_register(0u8);
+    assert_eq!(r0, 50331648); // the ldmia before incremented r0 by 0x40. the sub before brings it back to the original value
+
+    // cmp r0, r11
+    cpu.execute_arm(cpu.decode(0xE150_000B));
+    let r11 = cpu.get_register(11u8);
+    assert_eq!(r0, r11);
+    assert!(cpu.psr[cpu.operating_mode].get_z());
+}
+
+#[test]
+fn stmia_empty_rlist() {
+    let mut cpu: CPU<Memory> = CPU::new();
+
+    // mov      r11, 50331648 (mem)    r11
+    cpu.execute_arm(cpu.decode(0xE3A0_B403));
+    let r11 = cpu.get_register(11u8);
+    assert_eq!(r11, 50331648);
+
+    // mov r0, r11
+    cpu.execute_arm(cpu.decode(0xE1A0_000B));
+    let r11 = cpu.get_register(11u8);
+    let r0 = cpu.get_register(0u8);
+    assert_eq!(r0, r11);
+
+    // stmia r0!, {}
+    cpu.execute_arm(cpu.decode(0xE8A0_0000));
+    let r0 = cpu.get_register(0u8);
+    assert_eq!(r0, 50331648 + 0x40);
+
+    // mov r1, pc
+    cpu.execute_arm(cpu.decode(0xE1A0_100F));
+    let r1 = cpu.get_register(1u8);
+    let r15 = cpu.get_register(15u8);
+    assert_eq!(r1, r15 + 4); // r1 is pc of this instruction + 8 (see data processing docs)
+
+    // ldr r2, [r11]
+    cpu.execute_arm(cpu.decode(0xE59B_2000));
+
+    // cmp r2, r1
+    cpu.execute_arm(cpu.decode(0xE152_0001));
+    let r2 = cpu.get_register(2u8);
+    let r1 = cpu.get_register(1u8);
+    assert_eq!(r2, r1);
+    assert!(cpu.psr[cpu.operating_mode].get_z());
+
+    // sub     r0, 0x40
+    cpu.execute_arm(cpu.decode(0xE240_0040));
+    let r0 = cpu.get_register(0u8);
+    assert_eq!(r0, 50331648);
+
+    // cmp r0, r11
+    cpu.execute_arm(cpu.decode(0xE150_000B));
+    let r11 = cpu.get_register(11u8);
+    assert_eq!(r0, r11);
+    assert!(cpu.psr[cpu.operating_mode].get_z());
+}

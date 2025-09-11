@@ -849,7 +849,7 @@ impl<T: MemoryInterface + Default> CPU<T> {
         let mut is_post: bool = !instruction.bit(24);
 
         // let base_address = self.get_register(base_register as u8) & !3; // align the address
-        let base_address = self.get_register(base_register as u8);
+        let mut base_address = self.get_register(base_register as u8);
 
         let mut address = base_address;
 
@@ -897,65 +897,72 @@ impl<T: MemoryInterface + Default> CPU<T> {
         }
 
         // If rlist is empty (rlist=0), then r15 is loaded/stored and Rb=Rb+/-40h (??)
+        // r15 is stored as "address of stm" + 12, so pc+8 (taking into account prefetch)
         // FIXME: this may be broken
         if register_list == 0 {
             if is_post {
                 if is_load {
-                    let _val = self.read_32_aligned(address, false);
-                    self.set_register(15, _val);
-                    address = if is_add {
-                        address + 0x40
-                    } else {
-                        address - 0x40
-                    };
-                } else {
-                }
-            } else {
-                if is_load {
-                    address = if is_add {
-                        address + 0x40
-                    } else {
-                        address - 0x40
-                    };
-                    let _val = self.read_32_aligned(address, false);
+                    let _val = self.read_32_aligned(base_address, false);
                     self.set_register(15, _val);
                 } else {
+                    let _val = self.get_register(15u8);
+
+                    self.write_32_aligned(base_address, _val + 8);
                 }
-            }
-        }
-        for i in 0..=15 {
-            // data transfer only if the register is in the bitmask (reg_list[i] == true)
-            if !register_list.bit(i) {
-                continue;
-            }
-            let mut r_i = self.get_register(i as u8);
-            if i == 15 {
-                // PC + 12 wrt to STM instruction if reg is 15
-                r_i += 8;
-            }
-            if is_post {
-                if is_load {
-                    let _val = self.read_32_aligned(address, false);
-                    if transfer_spsr && i == 15 {
-                        self.psr[0].register = self.psr[self.operating_mode].register;
-                    }
-                    self.set_register(i as u8, _val);
+                base_address = if is_add {
+                    base_address + 0x40
                 } else {
-                    self.write_32_aligned(address, r_i);
-                }
-                // address = if is_add { address + 4 } else { address - 4 }; // Increment After and Decrement After
-                address += 4;
+                    base_address - 0x40
+                };
             } else {
-                // address = if is_add { address + 4 } else { address - 4 }; // Increment Before and Decrement Before
-                address += 4;
-                if is_load {
-                    let _val = self.read_32_aligned(address, false);
-                    if transfer_spsr && i == 15 {
-                        self.psr[0].register = self.psr[self.operating_mode].register;
-                    }
-                    self.set_register(i as u8, _val);
+                base_address = if is_add {
+                    base_address + 0x40
                 } else {
-                    self.write_32_aligned(address, r_i);
+                    base_address - 0x40
+                };
+                if is_load {
+                    let _val = self.read_32_aligned(base_address, false);
+                    self.set_register(15, _val);
+                } else {
+                    let _val = self.get_register(15u8);
+                    self.write_32_aligned(base_address, _val + 8);
+                }
+            }
+        } else {
+            for i in 0..=15 {
+                // data transfer only if the register is in the bitmask (reg_list[i] == true)
+                if !register_list.bit(i) {
+                    continue;
+                }
+                let mut r_i = self.get_register(i as u8);
+                if i == 15 {
+                    // PC + 12 wrt to STM instruction if reg is 15
+                    r_i += 8;
+                }
+                if is_post {
+                    if is_load {
+                        let _val = self.read_32_aligned(address, false);
+                        if transfer_spsr && i == 15 {
+                            self.psr[0].register = self.psr[self.operating_mode].register;
+                        }
+                        self.set_register(i as u8, _val);
+                    } else {
+                        self.write_32_aligned(address, r_i);
+                    }
+                    // address = if is_add { address + 4 } else { address - 4 }; // Increment After and Decrement After
+                    address += 4;
+                } else {
+                    // address = if is_add { address + 4 } else { address - 4 }; // Increment Before and Decrement Before
+                    address += 4;
+                    if is_load {
+                        let _val = self.read_32_aligned(address, false);
+                        if transfer_spsr && i == 15 {
+                            self.psr[0].register = self.psr[self.operating_mode].register;
+                        }
+                        self.set_register(i as u8, _val);
+                    } else {
+                        self.write_32_aligned(address, r_i);
+                    }
                 }
             }
         }
