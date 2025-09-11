@@ -112,7 +112,7 @@ fn dp_add() {
     r0 = cpu.get_register(0 as u8);
     assert_eq!(r0, 64); //r0 must be 32
 
-    //cmp r0,32
+    //cmp r0,64
     cpu.execute_arm(cpu.decode(0xE350_0040));
     assert!(cpu.psr[cpu.operating_mode].get_z()); //Z must be set to 1
 }

@@ -1,5 +1,6 @@
 pub mod block_data_transfer;
 pub mod data_processing;
+pub mod data_swap;
 pub mod half_data_transfer;
 pub mod multiply;
 pub mod psr_transfer;

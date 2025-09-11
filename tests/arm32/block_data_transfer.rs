@@ -1,4 +1,4 @@
-use core::{cell, todo};
+use core::todo;
 
 use arm7tdmi::cpu::*;
 use gba::memory::Memory;
@@ -611,7 +611,6 @@ fn ldm_stm_load_user_registers() {
     assert_eq!(r8, 0xA);
 }
 
-// TODO: this test
 #[test]
 fn ldm_stm_load_empty_rlist() {
     let mut cpu: CPU<Memory> = CPU::new();

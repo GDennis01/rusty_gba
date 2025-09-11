@@ -42,7 +42,6 @@ pub enum OpcodeArm {
     SUB,
     SWI,
     SWP,
-    SWPB,
     TEQ,
     TST,
     UMLAL,
@@ -995,6 +994,33 @@ impl<T: MemoryInterface + Default> CPU<T> {
         // if S is set and is in User bank transfer, resume the previous operating mode
         if user_bank_transfer {
             self.operating_mode = prev_op_mode;
+        }
+    }
+
+    /// Single Data Swap (SWP)
+    /// Swap a byte(SWPB) or word between a register rn and external memory
+    /// Rd = [Rn]
+    /// [Rn] = Rm
+    pub fn SWP(&mut self, instruction: u32) {
+        let rm = self.get_register(instruction.bit_range(0..=3) as u8);
+        let rd = instruction.bit_range(12..=15) as u8;
+        let rn = self.get_register(instruction.bit_range(16..=19) as u8); // swap address
+        let is_byte = instruction.bit(22);
+
+        let swap_addr_content: u32;
+        if is_byte {
+            swap_addr_content = self.memory.read_8(rn) as u32;
+        } else {
+            // SWP performs a rotated read
+            swap_addr_content = self.read_32_aligned(rn, true);
+        }
+        // Rd = [Rn]
+        self.set_register(rd, swap_addr_content);
+        // [Rn] = Rm
+        if is_byte {
+            self.memory.write_8(rn, rm as u8);
+        } else {
+            self.memory.write_32(rn, rm);
         }
     }
 
