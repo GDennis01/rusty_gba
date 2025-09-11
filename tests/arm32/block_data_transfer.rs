@@ -1,4 +1,4 @@
-use core::cell;
+use core::{cell, todo};
 
 use arm7tdmi::cpu::*;
 use gba::memory::Memory;
@@ -701,4 +701,9 @@ fn stmia_empty_rlist() {
     let r11 = cpu.get_register(11u8);
     assert_eq!(r0, r11);
     assert!(cpu.psr[cpu.operating_mode].get_z());
+}
+
+#[test]
+fn load_writeback_base_first_rlist() {
+    todo!()
 }

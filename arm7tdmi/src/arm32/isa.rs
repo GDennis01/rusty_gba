@@ -3,7 +3,7 @@ use core::panic;
 
 use alloc::vec::Vec;
 
-use crate::cpu::{MemoryInterface, OperatingMode, CPU};
+use crate::cpu::{MemoryInterface, Mode, OperatingMode, CPU};
 use crate::BitRange;
 use crate::ToBitVec;
 #[derive(Debug)]
@@ -55,8 +55,16 @@ impl<T: MemoryInterface + Default> CPU<T> {
      * BRANCH AND BRANCH EXCHANGE*
      *****************************/
 
+    /// Branch to the address of PC=Rn (bit 0-3)
+    /// Rn[0] determines wheter to remains in ARM (bit=0) or switch to THUMB (bit=1)
+    /// This instruction causes a pipeline and is refilled from [Rn]
     pub fn BX(&mut self, instruction: u32) {
-        todo!()
+        let rn = self.get_register(instruction.bit_range(0..=3) as u8);
+        self.set_register(15u8, rn);
+        self.mode = match rn.bit(0) {
+            false => Mode::ARM,
+            true => Mode::THUMB,
+        }
     }
 
     /// Adds a signed 2 complement 24 bit offset(shitfted left by 2) to PC
@@ -64,12 +72,14 @@ impl<T: MemoryInterface + Default> CPU<T> {
     /// Cycles: 2S + 1N
     pub fn B(&mut self, instruction: u32) {
         //Link bit set
+        let pc = self.get_register(15);
         if instruction.bit(24) {
-            let pc = self.get_register(15);
+            // r14 contains the address of the instruction after the BL
             self.set_register(14, pc);
         }
         let offset = (instruction.bit_range(0..=23) as i32) << 2;
-        self.registers[15] = (self.registers[15] as i32 + offset) as u32;
+        // self.registers[15] = (self.registers[15] as i32 + offset) as u32;
+        self.set_register(15u8, (offset + (pc + 4) as i32) as u32);
     }
 
     /************************************************
